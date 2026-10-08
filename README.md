@@ -101,6 +101,14 @@ The SQLite database and session store are created under `database/`. Project fil
 - Contact form messages are stored in the SQLite `contact_messages` table.
 - The public brand uses `public/assets/logo.jpeg` if it exists; otherwise it displays the included C8B SVG wordmark. The current repository did not contain `logo.jpeg` when this phase was implemented.
 
+## Authentication and proxy behavior
+
+- All website pages require an active signed-in session. Unauthenticated page requests are redirected to `/login`; public static assets, the health endpoint, local login/registration APIs, and configured OAuth callbacks are the deliberate exceptions.
+- An already signed-in regular user visiting `/login` or `/register` is redirected to the home page. The Owner is redirected to `/owner`.
+- Signing out destroys the server session and redirects to `/login`. Protected page responses use `Cache-Control: no-store`.
+- The login and registration pages show Google/Discord options only when the matching provider ID and secret are configured. Local username/email and password authentication remains available without OAuth keys.
+- Express trusts one proxy hop (`app.set('trust proxy', 1)`) for deployments such as GitHub Codespaces. If deploying behind a different proxy topology, set this to match the actual trusted proxy chain.
+
 ## Optional OAuth
 
 OAuth is disabled unless both the client ID and client secret are configured for a provider. Register these callback URLs in the relevant provider console and set the matching variables in `.env`:
