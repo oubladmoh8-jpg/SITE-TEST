@@ -108,8 +108,8 @@ router.post('/login', authLimiter, requireCsrf, async (req, res, next) => {
   try {
     const identifier = cleanString(req.body && req.body.identifier, 254);
     const password = req.body && req.body.password;
-    if (!identifier || typeof password !== 'string' || password.length > 128) {
-      return sendAuthError(res, 400, 'Enter your username or email and password.');
+    if (!identifier || typeof password !== 'string' || password.length > 128 || Buffer.byteLength(password, 'utf8') > 72) {
+      return sendAuthError(res, 400, 'Enter your username or email and a valid password.');
     }
 
     const user = identifier.includes('@')
