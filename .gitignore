@@ -1,7 +1,27 @@
+# Dependencies and local environment secrets
 node_modules/
 .env
+.env.*
+!.env.example
+
+# Logs and operating-system/editor files
 *.log
+.DS_Store
+Thumbs.db
+
+# Runtime SQLite databases (including the SQLite session store)
 database/*.sqlite
 database/*.sqlite-*
+database/*.db
+database/*.db-*
+
+# User uploads are runtime data; retain directory placeholders only
 uploads/**
 !uploads/.gitkeep
+!uploads/projects/
+!uploads/projects/.gitkeep
+!uploads/images/
+!uploads/images/.gitkeep
+
+# Build and test output
+coverage/
