@@ -1,0 +1,23 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="theme-color" content="#0b0d16">
+  <title>Signed in · C8B</title>
+  <link rel="stylesheet" href="/css/auth.css">
+  <script src="/js/auth.js" defer></script>
+</head>
+<body data-page="authenticated">
+  <main class="success-shell">
+    <a class="brand" href="/app"><span class="brand-mark">C8</span><span>C8B</span></a>
+    <section class="success-card">
+      <p class="eyebrow">Authentication complete</p>
+      <h1>You’re signed in<span class="accent">.</span></h1>
+      <p class="subheading" id="signed-in-as">Your session is active.</p>
+      <p class="muted">This is a temporary Phase 2 confirmation page. Project features will be implemented in a later phase.</p>
+      <form id="logout-form"><input type="hidden" name="csrfToken" value=""><button class="primary-button" type="submit">Sign out</button></form>
+    </section>
+  </main>
+</body>
+</html>
