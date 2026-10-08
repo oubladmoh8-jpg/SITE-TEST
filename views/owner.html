@@ -1,0 +1,130 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="theme-color" content="#0b0d16">
+  <title>Owner Dashboard · C8B</title>
+  <link rel="stylesheet" href="/css/owner.css">
+  <script src="/js/owner.js" defer></script>
+</head>
+<body data-page="owner">
+  <div class="admin-layout">
+    <aside class="sidebar" id="sidebar">
+      <a class="brand" href="/owner"><span class="brand-mark">C8</span><span>C8B <small>OWNER</small></span></a>
+      <div class="sidebar-label">WORKSPACE</div>
+      <nav class="side-nav" aria-label="Owner dashboard navigation">
+        <button class="nav-item active" data-view="dashboard"><span>◫</span> Dashboard</button>
+        <button class="nav-item" data-view="projects"><span>▦</span> Projects</button>
+        <button class="nav-item" data-view="files"><span>▤</span> Files</button>
+        <button class="nav-item" data-view="categories"><span>◇</span> Categories</button>
+        <button class="nav-item" data-view="downloads"><span>↓</span> Downloads</button>
+        <button class="nav-item" data-view="users"><span>♙</span> Users</button>
+        <button class="nav-item" data-view="settings"><span>⚙</span> Settings</button>
+      </nav>
+      <div class="sidebar-bottom">
+        <div class="owner-chip"><span class="avatar">A</span><span><strong id="owner-username">Owner</strong><small>Administrator</small></span><span class="online-dot"></span></div>
+        <button id="logout-button" class="logout-button"><span>↪</span> Log out</button>
+      </div>
+    </aside>
+    <main class="main-area">
+      <header class="topbar">
+        <button id="mobile-menu" class="icon-button mobile-menu" aria-label="Toggle navigation">☰</button>
+        <div><p class="top-eyebrow">C8B CONTROL CENTER</p><h1 id="page-title">Dashboard overview</h1></div>
+        <div class="top-actions"><span class="status-pill"><i></i> System online</span><span class="avatar" id="top-avatar">A</span></div>
+      </header>
+      <div id="page-notice" class="notice" role="status" aria-live="polite" hidden></div>
+      <section class="view active" id="view-dashboard">
+        <div class="welcome-row"><div><p class="eyebrow">YOUR PLATFORM AT A GLANCE</p><h2>Good to see you, <span id="welcome-name">Owner</span>.</h2><p class="muted">Here’s what’s happening across your projects today.</p></div><button class="button button-primary" data-action="new-project">＋ New project</button></div>
+        <div class="stat-grid">
+          <article class="stat-card"><div class="stat-icon purple">▦</div><p>Total projects</p><strong id="stat-projects">—</strong><span class="stat-foot">All project entries</span></article>
+          <article class="stat-card"><div class="stat-icon green">↓</div><p>Total downloads</p><strong id="stat-downloads">—</strong><span class="stat-foot">Tracked file downloads</span></article>
+          <article class="stat-card"><div class="stat-icon blue">♙</div><p>Registered users</p><strong id="stat-users">—</strong><span class="stat-foot">Normal user accounts</span></article>
+          <article class="stat-card"><div class="stat-icon orange">▤</div><p>Hosted files</p><strong id="stat-files">—</strong><span class="stat-foot">Stored on this server</span></article>
+        </div>
+        <div class="content-grid">
+          <article class="panel panel-wide"><div class="panel-heading"><div><h3>Recent projects</h3><p>Latest additions to your catalogue</p></div><button class="text-button" data-view-link="projects">View all →</button></div><div id="recent-projects" class="list-stack"><div class="empty-state">Loading projects…</div></div></article>
+          <article class="panel"><div class="panel-heading"><div><h3>Project highlights</h3><p>Featured content and reach</p></div></div><div class="highlight-stat"><span class="highlight-icon">✦</span><div><strong id="stat-featured">—</strong><span>Featured projects</span></div></div><div class="panel-divider"></div><div class="panel-heading compact"><h3>Most downloaded</h3><button class="text-button" data-view-link="downloads">Details</button></div><div id="popular-projects" class="rank-list"><div class="empty-state">Loading…</div></div></article>
+        </div>
+        <article class="panel recent-downloads-panel"><div class="panel-heading"><div><h3>Recent downloads</h3><p>Latest file activity recorded by the server</p></div><button class="text-button" data-view-link="downloads">All downloads →</button></div><div class="table-wrap"><table><thead><tr><th>FILE</th><th>PROJECT</th><th>USER</th><th>DATE</th></tr></thead><tbody id="recent-downloads"><tr><td colspan="4">Loading…</td></tr></tbody></table></div></article>
+      </section>
+      <section class="view" id="view-projects">
+        <div class="section-intro"><div><p class="eyebrow">CATALOGUE</p><h2>Projects</h2><p class="muted">Create, edit, feature, and organize project entries.</p></div><button class="button button-primary" data-action="new-project">＋ Create project</button></div>
+        <article class="panel"><div class="toolbar"><input id="project-search" class="search-input" type="search" placeholder="Search projects…" aria-label="Search projects"><span id="project-count" class="muted small-text"></span></div><div class="table-wrap"><table><thead><tr><th>PROJECT</th><th>CATEGORY</th><th>VERSION</th><th>STATUS</th><th>DOWNLOADS</th><th>ACTIONS</th></tr></thead><tbody id="projects-table"><tr><td colspan="6">Loading projects…</td></tr></tbody></table></div></article>
+      </section>
+      <section class="view" id="view-files">
+        <div class="section-intro"><div><p class="eyebrow">SERVER STORAGE</p><h2>Hosted files</h2><p class="muted">Files are stored locally and served through controlled download routes.</p></div><button class="button button-primary" data-action="upload-file">↑ Upload files</button></div>
+        <article class="panel"><div class="toolbar"><input id="file-search" class="search-input" type="search" placeholder="Search files or projects…" aria-label="Search files"><span id="file-count" class="muted small-text"></span></div><div class="table-wrap"><table><thead><tr><th>FILENAME</th><th>PROJECT</th><th>VERSION</th><th>SIZE</th><th>DOWNLOADS</th><th>UPLOADED</th><th>STATUS</th><th>ACTIONS</th></tr></thead><tbody id="files-table"><tr><td colspan="8">Loading files…</td></tr></tbody></table></div></article>
+      </section>
+      <section class="view" id="view-categories">
+        <div class="section-intro"><div><p class="eyebrow">ORGANIZATION</p><h2>Categories</h2><p class="muted">Group projects into useful categories.</p></div><button class="button button-primary" data-action="new-category">＋ New category</button></div>
+        <article class="panel"><div class="table-wrap"><table><thead><tr><th>CATEGORY</th><th>SLUG</th><th>DESCRIPTION</th><th>PROJECTS</th><th>ACTIONS</th></tr></thead><tbody id="categories-table"><tr><td colspan="5">Loading categories…</td></tr></tbody></table></div></article>
+      </section>
+      <section class="view" id="view-downloads">
+        <div class="section-intro"><div><p class="eyebrow">FILE ACTIVITY</p><h2>Downloads</h2><p class="muted">Every download count is recorded by the server.</p></div></div>
+        <article class="panel"><div class="table-wrap"><table><thead><tr><th>FILE</th><th>PROJECT</th><th>VERSION</th><th>USER</th><th>DOWNLOADED AT</th></tr></thead><tbody id="downloads-table"><tr><td colspan="5">Loading downloads…</td></tr></tbody></table></div></article>
+      </section>
+      <section class="view" id="view-users">
+        <div class="section-intro"><div><p class="eyebrow">COMMUNITY</p><h2>Users</h2><p class="muted">Read-only account overview. Normal users cannot promote themselves.</p></div></div>
+        <article class="panel"><div class="table-wrap"><table><thead><tr><th>USER</th><th>EMAIL</th><th>ROLE</th><th>REGISTERED</th><th>LAST UPDATED</th><th>STATUS</th></tr></thead><tbody id="users-table"><tr><td colspan="6">Loading users…</td></tr></tbody></table></div></article>
+      </section>
+      <section class="view" id="view-settings">
+        <div class="section-intro"><div><p class="eyebrow">CONFIGURATION</p><h2>Settings</h2><p class="muted">Update public-facing metadata and default project behavior.</p></div></div>
+        <form id="settings-form" class="panel settings-form">
+          <div class="form-heading"><h3>Site settings</h3><p>Secrets and OAuth credentials are not stored here.</p></div>
+          <label for="setting-site-name">Website name</label><input id="setting-site-name" name="site_name" maxlength="80" required>
+          <label for="setting-site-description">Website description</label><textarea id="setting-site-description" name="site_description" rows="3" maxlength="500"></textarea>
+          <label for="setting-default-status">Default project status</label><select id="setting-default-status" name="default_project_status"><option value="draft">Draft</option><option value="published">Published</option><option value="archived">Archived</option></select>
+          <div class="settings-note"><strong>Upload limit</strong><span id="upload-limit-note">Configured via UPLOAD_MAX_MB in your server environment.</span></div>
+          <button class="button button-primary" type="submit">Save settings</button>
+        </form>
+      </section>
+      <footer class="app-footer"><span>© C8B · Owner Control Center</span><span>Protected administrative area</span></footer>
+    </main>
+  </div>
+  <dialog id="project-dialog" class="modal"><form id="project-form" class="modal-card">
+    <div class="modal-header"><div><p class="eyebrow">PROJECT EDITOR</p><h2 id="project-dialog-title">Create project</h2></div><button type="button" class="icon-button" data-close="project-dialog" aria-label="Close">×</button></div>
+    <input type="hidden" name="id">
+    <div class="form-grid"><div class="field-span"><label for="project-title">Project name *</label><input id="project-title" name="title" maxlength="120" required minlength="2"></div>
+      <div><label for="project-version">Version</label><input id="project-version" name="version" maxlength="40" value="1.0.0" required></div>
+      <div><label for="project-category">Category</label><select id="project-category" name="categoryId"><option value="">Uncategorized</option></select></div>
+      <div><label for="project-status">Status</label><select id="project-status" name="status"><option value="draft">Draft</option><option value="published">Published</option><option value="archived">Archived</option></select></div>
+      <div class="check-field"><label><input type="checkbox" name="featured"> Featured project</label></div>
+      <div class="field-span"><label for="project-description">Description</label><textarea id="project-description" name="description" rows="3" maxlength="10000"></textarea></div>
+      <div class="field-span"><label for="project-features">Features <span>One per line</span></label><textarea id="project-features" name="features" rows="3"></textarea></div>
+      <div class="field-span"><label for="project-requirements">Requirements</label><textarea id="project-requirements" name="requirements" rows="2" maxlength="5000"></textarea></div>
+      <div class="field-span"><label for="project-changelog">Changelog</label><textarea id="project-changelog" name="changelog" rows="3" maxlength="10000"></textarea></div>
+      <div class="field-span"><label for="project-links">External links <span>One per line: Label | https://…</span></label><textarea id="project-links" name="externalLinks" rows="2"></textarea></div>
+    </div>
+    <div id="project-media-area" class="media-area" hidden><div class="form-heading"><h3>Project images</h3><p>PNG, JPEG, WebP, or GIF · max 10 MB each</p></div>
+      <div class="media-upload-row"><label>Icon <input type="file" id="media-icon" accept=".png,.jpg,.jpeg,.webp,.gif"></label><button type="button" class="button button-secondary" data-media="icon">Upload icon</button></div>
+      <div class="media-upload-row"><label>Banner <input type="file" id="media-banner" accept=".png,.jpg,.jpeg,.webp,.gif"></label><button type="button" class="button button-secondary" data-media="banner">Upload banner</button></div>
+      <div class="media-upload-row"><label>Screenshot <input type="file" id="media-screenshot" accept=".png,.jpg,.jpeg,.webp,.gif"></label><button type="button" class="button button-secondary" data-media="screenshot">Add screenshot</button></div>
+      <div id="media-list" class="media-list"></div>
+    </div>
+    <div class="modal-actions"><button type="button" class="button button-secondary" data-close="project-dialog">Cancel</button><button type="submit" class="button button-primary">Save project</button></div>
+  </form></dialog>
+  <dialog id="category-dialog" class="modal"><form id="category-form" class="modal-card">
+    <div class="modal-header"><div><p class="eyebrow">ORGANIZATION</p><h2 id="category-dialog-title">New category</h2></div><button type="button" class="icon-button" data-close="category-dialog" aria-label="Close">×</button></div>
+    <input type="hidden" name="id"><label for="category-name">Name *</label><input id="category-name" name="name" maxlength="80" required minlength="2">
+    <label for="category-slug">Slug</label><input id="category-slug" name="slug" maxlength="80">
+    <label for="category-description">Description</label><textarea id="category-description" name="description" rows="3" maxlength="500"></textarea>
+    <div class="modal-actions"><button type="button" class="button button-secondary" data-close="category-dialog">Cancel</button><button type="submit" class="button button-primary">Save category</button></div>
+  </form></dialog>
+  <dialog id="upload-dialog" class="modal"><form id="upload-form" class="modal-card">
+    <div class="modal-header"><div><p class="eyebrow">LOCAL FILE STORAGE</p><h2>Upload project files</h2></div><button type="button" class="icon-button" data-close="upload-dialog" aria-label="Close">×</button></div>
+    <label for="upload-project">Project *</label><select id="upload-project" name="projectId" required></select>
+    <label for="upload-version">Version</label><input id="upload-version" name="version" maxlength="40" value="1.0.0">
+    <label for="upload-files">Files * <span>Choose up to 10 files per upload</span></label><input id="upload-files" name="files" type="file" multiple required>
+    <p class="form-help">Supported archives, documents, images, and common software packages. Files are stored on the server and downloaded from C8B.</p>
+    <div class="modal-actions"><button type="button" class="button button-secondary" data-close="upload-dialog">Cancel</button><button type="submit" class="button button-primary">Upload files</button></div>
+  </form></dialog>
+  <dialog id="file-dialog" class="modal"><form id="file-form" class="modal-card">
+    <div class="modal-header"><div><p class="eyebrow">FILE DETAILS</p><h2>Edit file</h2></div><button type="button" class="icon-button" data-close="file-dialog" aria-label="Close">×</button></div>
+    <input type="hidden" name="id"><label for="file-display-name">Display filename</label><input id="file-display-name" name="filename" maxlength="180" required>
+    <label for="file-version">Version</label><input id="file-version" name="version" maxlength="40" required>
+    <label for="file-status">Status</label><select id="file-status" name="status"><option value="active">Active</option><option value="inactive">Inactive</option></select>
+    <div class="modal-actions"><button type="button" class="button button-secondary" data-close="file-dialog">Cancel</button><button type="submit" class="button button-primary">Save file details</button></div>
+  </form></dialog>
+</body>
+</html>
