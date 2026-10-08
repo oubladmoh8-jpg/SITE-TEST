@@ -19,6 +19,7 @@ const { router: authRouter, safePublicUser } = require('./routes/auth');
 const { requireAuth, requireOwner } = require('./middleware/auth');
 const ownerRouter = require('./routes/owner');
 const downloadRouter = require('./routes/downloads');
+const { router: publicRouter, errorPage: publicErrorPage } = require('./routes/public');
 
 const app = express();
 const isProduction = process.env.NODE_ENV === 'production';
@@ -174,10 +175,6 @@ app.use('/api', generalLimiter);
 
 app.get('/health', (_req, res) => res.status(200).json({ status: 'ok', app: 'C8B' }));
 
-app.get('/', (req, res) => {
-  if (req.isAuthenticated && req.isAuthenticated()) return res.redirect('/app');
-  return res.redirect('/login');
-});
 app.get('/login', (req, res) => {
   if (req.isAuthenticated && req.isAuthenticated()) return res.redirect('/app');
   return res.sendFile(path.join(viewsDir, 'login.html'));
@@ -192,22 +189,25 @@ app.use('/auth', authRouter);
 
 app.get('/app', requireAuth, (req, res) => {
   if (req.user.role === 'owner') return res.redirect('/owner');
-  res.set('Cache-Control', 'no-store');
-  return res.sendFile(path.join(viewsDir, 'authenticated.html'));
+  return res.redirect('/');
 });
 
 // Owner UI and all management APIs are protected on the server, independently of the frontend.
-app.get('/owner', requireAuth, requireOwner, (_req, res) => {
+app.get('/owner', requireAuth, (req, res, next) => {
+  if (req.user.role !== 'owner') return publicErrorPage(req, res, 403, 'Access denied', 'The Owner Control Center is reserved for the authenticated Owner account.');
+  return next();
+}, requireOwner, (_req, res) => {
   res.set('Cache-Control', 'no-store');
   return res.sendFile(path.join(viewsDir, 'owner.html'));
 });
 app.use('/api/owner', ownerRouter);
 app.use('/api/download', downloadRouter);
+app.use(publicRouter);
 
-// Every unknown request returns a generic message; internal errors are never serialized.
+// Unknown API requests stay JSON; public page errors use the shared branded layout.
 app.use((req, res) => {
   if (req.path.startsWith('/api/')) return res.status(404).json({ error: 'Not found.' });
-  return res.status(404).send('404 — Page not found');
+  return publicErrorPage(req, res, 404, 'Page not found', 'We couldn’t find that page. The link may be incorrect or the page may have moved.');
 });
 
 app.use((error, req, res, next) => {
@@ -216,7 +216,7 @@ app.use((error, req, res, next) => {
   if (req.path.startsWith('/api/')) {
     return res.status(500).json({ error: isProduction ? 'An unexpected error occurred.' : 'Request failed. Check the server logs.' });
   }
-  return res.status(500).send(isProduction ? 'An unexpected error occurred.' : 'Request failed. Check the server logs.');
+  return publicErrorPage(req, res, 500, 'Something went wrong', isProduction ? 'An unexpected error occurred. Please try again later.' : 'The request could not be completed. Check the server logs if the problem persists.');
 });
 
 const server = app.listen(port, '0.0.0.0', () => {
