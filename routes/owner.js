@@ -91,6 +91,45 @@ function unlinkStored(root, storedName) {
   if (!absolute.startsWith(root + path.sep)) return;
   try { fs.unlinkSync(absolute); } catch (error) { if (error.code !== 'ENOENT') console.warn('Unable to remove stored upload.'); }
 }
+function fileSignatureValid(file, imageOnly = false) {
+  const ext = path.extname(file.filename).toLowerCase();
+  let fd;
+  let header;
+  try {
+    fd = fs.openSync(file.path, 'r');
+    header = Buffer.alloc(512);
+    const bytesRead = fs.readSync(fd, header, 0, header.length, 0);
+    header = header.subarray(0, bytesRead);
+  } catch {
+    return false;
+  } finally {
+    if (fd !== undefined) fs.closeSync(fd);
+  }
+  const starts = (...bytes) => bytes.every((byte, index) => header[index] === byte);
+  if (imageOnly || ['.png','.jpg','.jpeg','.webp','.gif','.pdf','.zip','.docx','.xlsx','.pptx','.apk','.aab','.jar','.gz','.tgz','.7z','.rar','.exe','.msi','.deb','.rpm','.dmg','.tar'].includes(ext)) {
+    if (['.jpg','.jpeg'].includes(ext)) return starts(0xff, 0xd8, 0xff);
+    if (ext === '.png') return header.subarray(0, 8).equals(Buffer.from([0x89,0x50,0x4e,0x47,0x0d,0x0a,0x1a,0x0a]));
+    if (ext === '.gif') return header.subarray(0, 6).toString('ascii').startsWith('GIF87a') || header.subarray(0, 6).toString('ascii').startsWith('GIF89a');
+    if (ext === '.webp') return header.subarray(0, 4).toString('ascii') === 'RIFF' && header.subarray(8, 12).toString('ascii') === 'WEBP';
+    if (ext === '.pdf') return header.subarray(0, 5).toString('ascii') === '%PDF-';
+    if (['.zip','.docx','.xlsx','.pptx','.apk','.aab','.jar'].includes(ext)) return starts(0x50,0x4b,0x03,0x04) || starts(0x50,0x4b,0x05,0x06) || starts(0x50,0x4b,0x07,0x08);
+    if (['.gz','.tgz'].includes(ext)) return starts(0x1f,0x8b);
+    if (ext === '.7z') return starts(0x37,0x7a,0xbc,0xaf,0x27,0x1c);
+    if (ext === '.rar') return header.subarray(0, 7).equals(Buffer.from([0x52,0x61,0x72,0x21,0x1a,0x07,0x00])) || header.subarray(0, 8).equals(Buffer.from([0x52,0x61,0x72,0x21,0x1a,0x07,0x01,0x00]));
+    if (ext === '.exe') return starts(0x4d,0x5a);
+    if (ext === '.msi') return starts(0xd0,0xcf,0x11,0xe0,0xa1,0xb1,0x1a,0xe1);
+    if (ext === '.deb') return header.subarray(0, 8).toString('ascii') === '!<arch>\\n';
+    if (ext === '.rpm') return starts(0xed,0xab,0xee,0xdb);
+    if (ext === '.dmg') return header.subarray(0, 4).toString('ascii') === 'koly' || header.subarray(0, 4).toString('ascii') === 'encr' || header.subarray(0, 4).toString('ascii') === 'mish';
+    if (ext === '.tar') return header.subarray(257, 262).toString('ascii') === 'ustar';
+  }
+  if (imageOnly) return false;
+  if (ext === '.json') {
+    try { JSON.parse(fs.readFileSync(file.path, 'utf8')); return true; } catch { return false; }
+  }
+  return true;
+}
+
 function fileSummary(row) {
   return {
     id: row.id, projectId: row.project_id, projectTitle: row.project_title || null,
@@ -245,7 +284,9 @@ router.post('/projects', requireCsrf, (req, res) => {
   if (title.length < 2) return res.status(400).json({ error: 'Project name must be at least 2 characters.' });
   if (req.body.categoryId && !categoryId) return res.status(400).json({ error: 'Choose a valid category.' });
   if (categoryId && !db.prepare('SELECT id FROM categories WHERE id = ?').get(categoryId)) return res.status(400).json({ error: 'Choose a valid category.' });
-  const status = ['draft', 'published', 'archived'].includes(req.body.status) ? req.body.status : 'draft';
+  const configuredDefault = db.prepare('SELECT value FROM site_settings WHERE key = ?').get('default_project_status');
+  const defaultStatus = configuredDefault && ['draft', 'published', 'archived'].includes(configuredDefault.value) ? configuredDefault.value : 'draft';
+  const status = ['draft', 'published', 'archived'].includes(req.body.status) ? req.body.status : defaultStatus;
   const insert = db.prepare(`
     INSERT INTO projects
       (owner_id, category_id, title, slug, description, status, version, featured, requirements, changelog, features_json, external_links_json)
@@ -340,6 +381,10 @@ router.post('/projects/:id/files', requireCsrf, (req, res, next) => {
   fileUpload.array('files', 10)(req, res, (error) => {
     if (error) return next(error);
     if (!req.files || req.files.length === 0) return res.status(400).json({ error: 'Choose at least one file to upload.' });
+    if (req.files.some((file) => !fileSignatureValid(file))) {
+      for (const file of req.files) unlinkStored(projectFilesRoot, file.filename);
+      return res.status(400).json({ error: 'One or more files do not match their file extension or contain invalid file data.' });
+    }
     const version = text(req.body.version, 40) || '1.0.0';
     const insert = db.prepare(`
       INSERT INTO project_files (project_id, uploaded_by, original_name, stored_name, mime_type, size_bytes, version, status)
@@ -382,6 +427,10 @@ router.post('/files/:id/replace', requireCsrf, (req, res, next) => {
   fileUpload.single('file')(req, res, (error) => {
     if (error) return next(error);
     if (!req.file) return res.status(400).json({ error: 'Choose a replacement file.' });
+    if (!fileSignatureValid(req.file)) {
+      unlinkStored(projectFilesRoot, req.file.filename);
+      return res.status(400).json({ error: 'The replacement file does not match its file extension or contains invalid file data.' });
+    }
     const ext = path.extname(req.file.filename).toLowerCase();
     try {
       db.prepare(`
@@ -422,6 +471,10 @@ router.post('/projects/:id/media', requireCsrf, (req, res, next) => {
   imageUpload.single('image')(req, res, (error) => {
     if (error) return next(error);
     if (!req.file) return res.status(400).json({ error: 'Choose an image.' });
+    if (!fileSignatureValid(req.file, true)) {
+      unlinkStored(imageRoot, req.file.filename);
+      return res.status(400).json({ error: 'The image content does not match its file extension.' });
+    }
     const project = db.prepare('SELECT icon_path, banner_path, screenshots_json FROM projects WHERE id = ?').get(id);
     let old = [];
     if (mediaType === 'icon') old = project.icon_path ? [project.icon_path] : [];
@@ -473,7 +526,8 @@ router.post('/categories', requireCsrf, (req, res) => {
   if (!slug) return res.status(400).json({ error: 'Enter a valid category name.' });
   try {
     const result = db.prepare('INSERT INTO categories (name, slug, description) VALUES (?, ?, ?)').run(name, slug, description);
-    return res.status(201).json({ category: listCategoriesQuery.get ? listCategoriesQuery.get(Number(result.lastInsertRowid)) : { id: Number(result.lastInsertRowid), name, slug, description, project_count: 0 } });
+    const category = db.prepare('SELECT c.*, 0 AS project_count FROM categories c WHERE c.id = ?').get(Number(result.lastInsertRowid));
+    return res.status(201).json({ category });
   } catch (error) {
     if (error.code === 'SQLITE_CONSTRAINT_UNIQUE') return res.status(409).json({ error: 'A category with that name or slug already exists.' });
     return res.status(500).json({ error: 'Could not create category.' });
