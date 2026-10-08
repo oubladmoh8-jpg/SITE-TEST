@@ -5,12 +5,11 @@
   const $ = (selector, root = document) => root.querySelector(selector);
   const $$ = (selector, root = document) => [...root.querySelectorAll(selector)];
   const notice = $('#page-notice');
-  document.querySelectorAll('img[data-fallback]').forEach((img) => img.addEventListener('error', () => {
-    if (img.dataset.fallback && img.src !== new URL(img.dataset.fallback, location.href).href) {
-      img.src = img.dataset.fallback;
-      img.removeAttribute('data-fallback');
-    }
-  }, { once: true }));
+  document.querySelectorAll('img[data-primary]').forEach((img) => {
+    const candidate = new Image();
+    candidate.onload = () => { img.src = img.dataset.primary; };
+    candidate.src = img.dataset.primary;
+  });
   const titles = {
     dashboard: 'Dashboard overview', projects: 'Project management', files: 'Hosted files',
     categories: 'Category management', downloads: 'Download activity', users: 'User accounts', settings: 'Site settings',
