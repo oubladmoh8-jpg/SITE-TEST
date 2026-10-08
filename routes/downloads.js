@@ -10,7 +10,7 @@ const router = express.Router();
 const filesRoot = path.resolve(__dirname, '..', 'uploads', 'projects');
 const getDownload = db.prepare(`
   SELECT f.id, f.project_id, f.original_name, f.stored_name, f.size_bytes, f.status,
-    p.title AS project_title
+    p.title AS project_title, p.status AS project_status
   FROM project_files f JOIN projects p ON p.id = f.project_id
   WHERE f.id = ?
 `);
@@ -20,7 +20,7 @@ router.get('/:fileId', requireAuth, (req, res) => {
   const id = Number(req.params.fileId);
   if (!Number.isSafeInteger(id) || id < 1) return res.status(400).json({ error: 'Invalid file ID.' });
   const file = getDownload.get(id);
-  if (!file || file.status !== 'active') return res.status(404).json({ error: 'File not found.' });
+  if (!file || file.status !== 'active' || file.project_status !== 'published') return res.status(404).json({ error: 'File not found.' });
 
   if (typeof file.stored_name !== 'string' || !/^[a-f0-9-]{36}\.[a-z0-9]{1,10}$/i.test(file.stored_name)) {
     return res.status(404).json({ error: 'File not found.' });
