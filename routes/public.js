@@ -165,7 +165,7 @@ function homeContent() {
   const categoryCards = categories.length ? categories.map((category, index) => `<a class="category-card" href="/projects?category=${encodeURIComponent(category.slug)}"><span class="category-icon" aria-hidden="true">${['◇','▦','⌘','✦'][index % 4]}</span><span><strong>${escapeHtml(category.name)}</strong><small>${formatNumber(category.project_count)} project${category.project_count === 1 ? '' : 's'}</small></span></a>`).join('') : '<div class="empty-state"><strong>Categories are on the way</strong>Projects will be grouped here as the catalogue grows.</div>';
   return `
     <section class="hero"><div class="container hero-grid"><div class="hero-copy">
-      <div class="hero-brand"><img src="/assets/logo.jpeg" data-fallback="/assets/logo.svg" alt="C8B logo"><span>C8B · CREATOR COMMUNITY</span></div>
+      <div class="hero-brand"><img src="/assets/logo.svg" data-primary="/assets/logo.jpeg" alt="C8B logo"><span>C8B · CREATOR COMMUNITY</span></div>
       <span class="eyebrow">A home for what you build</span><h1>Build. Create.<span>Share.</span></h1>
       <p class="hero-lede">A growing home for projects, games, tools, Minecraft builds, Roblox experiences, Discord bots, applications, and the ideas behind them. Discover something useful, find inspiration, and share what you make.</p>
       <div class="hero-actions"><a class="button button-primary" href="/projects">Explore projects <span aria-hidden="true">→</span></a><a class="button button-secondary" href="https://discord.gg/3rV8GwSfSw" target="_blank" rel="noopener noreferrer">Join Discord ↗</a><a class="button button-secondary" href="https://youtube.com/@cha8abb?si=MW5Gg5SKqKh9wWaR" target="_blank" rel="noopener noreferrer">YouTube ↗</a></div>
