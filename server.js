@@ -16,7 +16,7 @@ const rateLimit = require('express-rate-limit');
 
 const { db, statements, initializeOwner, findOrCreateOAuthUser } = require('./database');
 const { router: authRouter, safePublicUser } = require('./routes/auth');
-const { requireAuth, requireCsrf, csrfToken, requireOwner } = require('./middleware/auth');
+const { requireAuth, requireOwner } = require('./middleware/auth');
 
 const app = express();
 const isProduction = process.env.NODE_ENV === 'production';
