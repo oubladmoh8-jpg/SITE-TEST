@@ -226,6 +226,15 @@ const popularProjectsQuery = db.prepare(`
   GROUP BY p.id, p.title
   ORDER BY downloads DESC, p.created_at DESC LIMIT 8
 `);
+const popularFilesQuery = db.prepare(`
+  SELECT f.id, f.original_name AS filename, f.version, p.id AS project_id, p.title AS project_title,
+    COUNT(d.id) AS downloads
+  FROM project_files f
+  JOIN projects p ON p.id = f.project_id
+  LEFT JOIN downloads d ON d.project_file_id = f.id
+  GROUP BY f.id, f.original_name, f.version, p.id, p.title
+  ORDER BY downloads DESC, f.created_at DESC LIMIT 8
+`);
 const listProjectsQuery = db.prepare(`
   SELECT p.*, c.name AS category_name,
     (SELECT COUNT(*) FROM project_files f WHERE f.project_id = p.id) AS file_count,
@@ -278,6 +287,7 @@ router.get('/dashboard', (_req, res) => {
     recentProjects: recentProjectsQuery.all().map(projectSummary),
     recentDownloads: recentDownloadsQuery.all(),
     popularProjects: popularProjectsQuery.all(),
+    popularFiles: popularFilesQuery.all(),
   });
 });
 
