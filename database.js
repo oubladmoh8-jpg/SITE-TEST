@@ -150,7 +150,7 @@ function findOrCreateOAuthUser(provider, providerUserId, email, displayName) {
     throw new Error('An account with this email already exists. Sign in with your password first; automatic account linking is disabled.');
   }
 
-  const base = String(displayName || '').toLowerCase().replace(/[^a-z0-9_]/g, '_').replace(/^_+|_+$/g, '').slice(0, 12);
+  const base = String(displayName || '').toLowerCase().replace(/[^a-z0-9_]/g, '_').replace(/^_+|_+$/g, '').slice(0, 8);
   const username = `oauth_${base || 'user'}_${require('node:crypto').randomBytes(4).toString('hex')}`.slice(0, 24);
   const createLinkedAccount = db.transaction(() => {
     const result = statements.insertUser.run(username, normalizedEmail, null, 'user');
