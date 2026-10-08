@@ -187,6 +187,7 @@ app.use('/api/auth', authRouter);
 app.use('/auth', authRouter);
 
 app.get('/app', requireAuth, (req, res) => {
+  if (req.user.role === 'owner') return res.redirect('/owner');
   res.set('Cache-Control', 'no-store');
   return res.sendFile(path.join(viewsDir, 'authenticated.html'));
 });
