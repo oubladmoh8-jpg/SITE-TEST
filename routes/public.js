@@ -101,7 +101,7 @@ function nav(page) {
 function renderPage(req, { title, description = 'Build. Create. Share.', page = '', content }) {
   const signedIn = Boolean(req.isAuthenticated && req.isAuthenticated() && req.user && req.user.is_active);
   const actions = signedIn
-    ? '<a class="button button-secondary button-small" href="/api/auth/logout" data-logout>Sign out</a>'
+    ? '<button class="button button-secondary button-small" type="button" data-logout>Sign out</button>'
     : '<a class="button button-secondary button-small" href="/login">Sign in</a><a class="button button-primary button-small" href="/register">Join C8B</a>';
   const values = {
     PAGE_TITLE: escapeHtml(title),
@@ -283,6 +283,9 @@ router.get('/download/:fileId', (req, res) => {
   if (!req.isAuthenticated || !req.isAuthenticated() || !req.user || !req.user.is_active) return res.redirect('/login');
   return res.redirect(302, `/api/download/${id}`);
 });
-router.use((req, res) => errorPage(req, res, 404, 'Page not found', 'We couldn’t find that page. The link may be incorrect or the page may have moved.'));
+router.use((req, res) => {
+  if (req.path.startsWith('/api/')) return res.status(404).json({ error: 'Not found.' });
+  return errorPage(req, res, 404, 'Page not found', 'We couldn’t find that page. The link may be incorrect or the page may have moved.');
+});
 
 module.exports = { router, errorPage, renderPage };
