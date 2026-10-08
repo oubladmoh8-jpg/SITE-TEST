@@ -481,7 +481,21 @@
     const search = $('#file-search').value.toLowerCase();
     $$('#files-table tr').forEach((row) => { row.hidden = !row.textContent.toLowerCase().includes(search); });
   });
-  $('#mobile-menu').addEventListener('click', () => $('#sidebar').classList.toggle('open'));
+  const sidebar = $('#sidebar');
+  const mobileMenu = $('#mobile-menu');
+  const sidebarBackdrop = $('#sidebar-backdrop');
+  function setMobileMenu(open) {
+    sidebar.classList.toggle('open', open);
+    sidebarBackdrop.hidden = !open;
+    mobileMenu.setAttribute('aria-expanded', String(open));
+    mobileMenu.setAttribute('aria-label', open ? 'Close navigation' : 'Open navigation');
+  }
+  mobileMenu.addEventListener('click', () => setMobileMenu(!sidebar.classList.contains('open')));
+  sidebarBackdrop.addEventListener('click', () => setMobileMenu(false));
+  sidebar.querySelectorAll('[data-view]').forEach((item) => item.addEventListener('click', () => setMobileMenu(false)));
+  window.addEventListener('resize', () => {
+    if (window.innerWidth > 768) setMobileMenu(false);
+  });
   $('#category-name').addEventListener('input', () => {
     const slug = $('#category-slug');
     if (!$('#category-form').elements.id.value || !slug.dataset.edited) {
