@@ -4,7 +4,7 @@ const express = require('express');
 const bcrypt = require('bcrypt');
 const rateLimit = require('express-rate-limit');
 const passport = require('passport');
-const { db, statements, findOrCreateOAuthUser } = require('../database');
+const { statements, findOrCreateOAuthUser } = require('../database');
 const { requireAuth, csrfToken, requireCsrf } = require('../middleware/auth');
 
 const router = express.Router();
