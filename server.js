@@ -17,6 +17,8 @@ const rateLimit = require('express-rate-limit');
 const { db, statements, initializeOwner, findOrCreateOAuthUser } = require('./database');
 const { router: authRouter, safePublicUser } = require('./routes/auth');
 const { requireAuth, requireOwner } = require('./middleware/auth');
+const ownerRouter = require('./routes/owner');
+const downloadRouter = require('./routes/downloads');
 
 const app = express();
 const isProduction = process.env.NODE_ENV === 'production';
@@ -189,10 +191,13 @@ app.get('/app', requireAuth, (req, res) => {
   return res.sendFile(path.join(viewsDir, 'authenticated.html'));
 });
 
-// Reserved for later phases; the middleware is already available for future owner-only routes.
-app.get('/api/owner/status', requireAuth, requireOwner, (_req, res) => {
-  return res.json({ owner: true });
+// Owner UI and all management APIs are protected on the server, independently of the frontend.
+app.get('/owner', requireAuth, requireOwner, (_req, res) => {
+  res.set('Cache-Control', 'no-store');
+  return res.sendFile(path.join(viewsDir, 'owner.html'));
 });
+app.use('/api/owner', ownerRouter);
+app.use('/api/download', downloadRouter);
 
 // Every unknown request returns a generic message; internal errors are never serialized.
 app.use((req, res) => {
