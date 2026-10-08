@@ -99,7 +99,7 @@ The SQLite database and session store are created under `database/`. Project fil
 - Public project pages are server-rendered from the SQLite database; project cards, categories, statistics, details, active files, and download counts are dynamic.
 - Downloads require authentication. The Owner dashboard and Owner APIs enforce server-side role checks and are not linked in normal public navigation.
 - Contact form messages are stored in the SQLite `contact_messages` table.
-- The public brand first tries `public/assets/logo.jpeg` and falls back to the included C8B SVG wordmark if the JPEG is absent.
+- The public brand uses `public/assets/logo.jpeg` if it exists; otherwise it displays the included C8B SVG wordmark. The current repository did not contain `logo.jpeg` when this phase was implemented.
 
 ## Optional OAuth
 
