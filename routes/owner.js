@@ -118,7 +118,7 @@ function fileSignatureValid(file, imageOnly = false) {
     if (ext === '.rar') return header.subarray(0, 7).equals(Buffer.from([0x52,0x61,0x72,0x21,0x1a,0x07,0x00])) || header.subarray(0, 8).equals(Buffer.from([0x52,0x61,0x72,0x21,0x1a,0x07,0x01,0x00]));
     if (ext === '.exe') return starts(0x4d,0x5a);
     if (ext === '.msi') return starts(0xd0,0xcf,0x11,0xe0,0xa1,0xb1,0x1a,0xe1);
-    if (ext === '.deb') return header.subarray(0, 8).toString('ascii') === '!<arch>\\n';
+    if (ext === '.deb') return header.subarray(0, 8).toString('ascii') === '!<arch>\n';
     if (ext === '.rpm') return starts(0xed,0xab,0xee,0xdb);
     if (ext === '.dmg') {
       try {
