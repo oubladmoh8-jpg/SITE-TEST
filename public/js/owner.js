@@ -471,7 +471,7 @@
   $('#upload-form').addEventListener('submit', submitUpload);
   $('#file-form').addEventListener('submit', saveFile);
   $('#settings-form').addEventListener('submit', saveSettings);
-  $('#logout-button').addEventListener('click', logout);
+  $('#logout-button').addEventListener('click', (event) => { event.preventDefault(); logout(); });
   $('#project-search').addEventListener('input', () => {
     const search = $('#project-search').value.toLowerCase();
     const rows = $$('#projects-table tr');
