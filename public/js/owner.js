@@ -425,17 +425,7 @@
   }
   async function logout() {
     if (!window.confirm('Sign out of the Owner Dashboard?')) return;
-    try {
-      const token = state.csrf || await getCsrf();
-      const response = await fetch('/api/auth/logout', {
-        method: 'POST', credentials: 'same-origin',
-        headers: { 'Content-Type': 'application/json', 'X-CSRF-Token': token, Accept: 'application/json' },
-        body: JSON.stringify({ csrfToken: token }),
-      });
-      const data = await response.json().catch(() => ({}));
-      if (!response.ok) throw new Error(data.error || 'Could not sign out.');
-      window.location.assign(data.redirect || '/login');
-    } catch (error) { showNotice(error.message, true); }
+    window.location.assign('/logout');
   }
 
   document.addEventListener('click', async (event) => {
