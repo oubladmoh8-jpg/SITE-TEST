@@ -16,12 +16,13 @@ const rateLimit = require('express-rate-limit');
 
 const { db, statements, initializeOwner, findOrCreateOAuthUser } = require('./database');
 const { router: authRouter, safePublicUser } = require('./routes/auth');
-const { requireAuth, requireOwner } = require('./middleware/auth');
+const { requireAuth, requireSiteAuth, requireOwner } = require('./middleware/auth');
 const ownerRouter = require('./routes/owner');
 const downloadRouter = require('./routes/downloads');
 const { router: publicRouter, errorPage: publicErrorPage } = require('./routes/public');
 
 const app = express();
+app.set('trust proxy', 1);
 const isProduction = process.env.NODE_ENV === 'production';
 const port = Number.parseInt(process.env.PORT || '3000', 10);
 const viewsDir = path.resolve(__dirname, 'views');
@@ -115,7 +116,6 @@ passport.deserializeUser((id, done) => {
 });
 
 app.disable('x-powered-by');
-if (isProduction) app.set('trust proxy', 1);
 app.use(helmet({
   contentSecurityPolicy: {
     directives: {
@@ -175,13 +175,36 @@ app.use('/api', generalLimiter);
 
 app.get('/health', (_req, res) => res.status(200).json({ status: 'ok', app: 'C8B' }));
 
+// Keep OAuth controls out of the HTML unless that provider has real credentials configured.
+function renderAuthPage(filename) {
+  let html = fs.readFileSync(path.join(viewsDir, filename), 'utf8');
+  if (!oauthEnabled.google) {
+    html = html.replace(/<a class="oauth-button" href="\/auth\/google" id="google-login">Google<\/a>/g, '');
+  }
+  if (!oauthEnabled.discord) {
+    html = html.replace(/<a class="oauth-button" href="\/auth\/discord" id="discord-login">Discord<\/a>/g, '');
+  }
+  if (!oauthEnabled.google && !oauthEnabled.discord) {
+    html = html.replace(/<div class="divider">[\s\S]*?<\/div>\s*<div class="oauth-buttons">[\s\S]*?<\/div>/g, '');
+  }
+  return html;
+}
+
+app.use(requireSiteAuth);
+
 app.get('/login', (req, res) => {
-  if (req.isAuthenticated && req.isAuthenticated()) return res.redirect('/app');
-  return res.sendFile(path.join(viewsDir, 'login.html'));
+  if (req.isAuthenticated && req.isAuthenticated() && req.user && req.user.is_active) {
+    return res.redirect(req.user.role === 'owner' ? '/owner' : '/');
+  }
+  res.set('Cache-Control', 'no-store, private');
+  return res.type('html').send(renderAuthPage('login.html'));
 });
 app.get('/register', (req, res) => {
-  if (req.isAuthenticated && req.isAuthenticated()) return res.redirect('/app');
-  return res.sendFile(path.join(viewsDir, 'register.html'));
+  if (req.isAuthenticated && req.isAuthenticated() && req.user && req.user.is_active) {
+    return res.redirect(req.user.role === 'owner' ? '/owner' : '/');
+  }
+  res.set('Cache-Control', 'no-store, private');
+  return res.type('html').send(renderAuthPage('register.html'));
 });
 
 app.use('/api/auth', authRouter);
