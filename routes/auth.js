@@ -78,6 +78,10 @@ router.post('/register', registrationLimiter, requireCsrf, async (req, res, next
     if (username.toLowerCase() === ownerUsername) {
       return sendAuthError(res, 400, 'That username is reserved.');
     }
+    const reservedOwnerEmail = cleanString(process.env.OWNER_EMAIL || 'admin@localhost.invalid').toLowerCase();
+    if (email === reservedOwnerEmail) {
+      return sendAuthError(res, 400, 'That email address is reserved.');
+    }
     if (statements.findUserByUsername.get(username)) return sendAuthError(res, 409, 'That username is already in use.');
     if (statements.findUserByEmail.get(email)) return sendAuthError(res, 409, 'An account with that email already exists.');
 
@@ -152,22 +156,22 @@ router.get('/me', requireAuth, (req, res) => {
   return res.json({ user: safePublicUser(req.user) });
 });
 
-router.get('/google', (req, res, next) => {
+router.get('/google', authLimiter, (req, res, next) => {
   if (!req.app.locals.oauthEnabled.google) return res.redirect('/login?error=oauth_unavailable');
   return passport.authenticate('google', { scope: ['profile', 'email'], state: true })(req, res, next);
 });
 
-router.get('/google/callback', (req, res, next) => {
+router.get('/google/callback', authLimiter, (req, res, next) => {
   if (!req.app.locals.oauthEnabled.google) return res.redirect('/login?error=oauth_unavailable');
   return passport.authenticate('google', { failureRedirect: '/login?error=oauth_failed' })(req, res, next);
 }, (req, res) => res.redirect('/app'));
 
-router.get('/discord', (req, res, next) => {
+router.get('/discord', authLimiter, (req, res, next) => {
   if (!req.app.locals.oauthEnabled.discord) return res.redirect('/login?error=oauth_unavailable');
   return passport.authenticate('discord', { scope: ['identify', 'email'], state: true })(req, res, next);
 });
 
-router.get('/discord/callback', (req, res, next) => {
+router.get('/discord/callback', authLimiter, (req, res, next) => {
   if (!req.app.locals.oauthEnabled.discord) return res.redirect('/login?error=oauth_failed');
   return passport.authenticate('discord', { failureRedirect: '/login?error=oauth_failed' })(req, res, next);
 }, (req, res) => res.redirect('/app'));
