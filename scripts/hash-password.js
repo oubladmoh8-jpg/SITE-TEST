@@ -3,7 +3,6 @@
 
 // Run locally with: node scripts/hash-password.js
 // The password is read from the terminal without echo and is never saved by this script.
-const readline = require('node:readline');
 const bcrypt = require('bcrypt');
 
 function readHidden(prompt) {
