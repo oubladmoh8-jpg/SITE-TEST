@@ -12,6 +12,21 @@ function requireAuth(req, res, next) {
   return res.redirect('/login');
 }
 
+function requireSiteAuth(req, res, next) {
+  // Public files are served before this middleware so login CSS/JS and images remain available.
+  // API endpoints have their own JSON authentication/authorization checks.
+  if (req.path.startsWith('/api/') || req.path === '/health' ||
+      req.path === '/login' || req.path === '/register' ||
+      /^\/auth\/(google|discord)(\/callback)?$/.test(req.path)) {
+    return next();
+  }
+
+  return requireAuth(req, res, () => {
+    res.set('Cache-Control', 'no-store, private');
+    return next();
+  });
+}
+
 function requireOwner(req, res, next) {
   if (!req.isAuthenticated || !req.isAuthenticated() || !req.user || !req.user.is_active) {
     return res.status(401).json({ error: 'Authentication required.' });
@@ -44,4 +59,4 @@ function requireCsrf(req, res, next) {
   return next();
 }
 
-module.exports = { requireAuth, requireOwner, csrfToken, requireCsrf };
+module.exports = { requireAuth, requireSiteAuth, requireOwner, csrfToken, requireCsrf };
