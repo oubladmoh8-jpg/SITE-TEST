@@ -190,6 +190,34 @@ function renderAuthPage(filename) {
   return html;
 }
 
+// Browser logout route for the Owner Dashboard. Destroy the server session and expire its cookie.
+app.get('/logout', (req, res, next) => {
+  if (!req.session) return res.redirect('/login');
+
+  const destroySession = () => {
+    req.session.destroy((error) => {
+      if (error) return next(error);
+      res.clearCookie('c8b.sid', {
+        httpOnly: true,
+        sameSite: 'lax',
+        secure: isProduction,
+        path: '/',
+      });
+      res.set('Cache-Control', 'no-store, private');
+      return res.redirect('/login');
+    });
+  };
+
+  if (typeof req.logout === 'function' && req.isAuthenticated && req.isAuthenticated()) {
+    return req.logout((error) => {
+      if (error) return next(error);
+      return destroySession();
+    });
+  }
+
+  return destroySession();
+});
+
 app.use(requireSiteAuth);
 
 app.get('/login', (req, res) => {
