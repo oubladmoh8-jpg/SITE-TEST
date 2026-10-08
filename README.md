@@ -1,6 +1,6 @@
 # C8B
 
-C8B is a Node.js/Express project platform. Phase 2 adds SQLite initialization, server-side registration/login, persistent sessions, optional Google/Discord OAuth, and Owner authorization middleware. Project management and uploads are intentionally not implemented yet.
+C8B is a Node.js/Express project platform. Phase 2 added SQLite initialization, server-side registration/login, persistent sessions, optional Google/Discord OAuth, and Owner authorization. Phase 3 adds a protected Owner Control Center, category/project management, local file storage, and tracked downloads. Public project browsing is not implemented yet.
 
 ## Requirements
 
@@ -55,3 +55,21 @@ OAuth login requires a verified email. OAuth accounts are not automatically link
 - Normal registrations always receive the `user` role. Owner access is checked server-side.
 - Configure HTTPS and a stable random `SESSION_SECRET` before production deployment.
 - The `/app` page is only a Phase 2 authentication confirmation placeholder, not a project dashboard.
+
+
+## Owner Control Center (Phase 3)
+
+Sign in with the separately configured Owner account and open `/owner`. Owner credentials are seeded only when `OWNER_PASSWORD_HASH` contains a valid bcrypt hash. A normal account cannot promote itself to Owner, and all Owner APIs enforce server-side role checks.
+
+The Owner dashboard supports project creation/editing/deletion, featured status, category assignment, project metadata, project images, categories, read-only user listings, settings, hosted files, and download history.
+
+### Local hosted downloads
+
+- Uploads are saved to the server's ignored `uploads/projects/` directory using random server-generated filenames.
+- Project icon/banner/screenshot images are saved under `uploads/images/`.
+- Files are downloaded through authenticated `GET /api/download/:fileId` responses; download records are created server-side.
+- Upload limits are controlled by `UPLOAD_MAX_MB` (default 100 MB); project images are limited to 10 MB each.
+- The current extension allowlist supports common archives, documents, images, and software packages. Content signatures are checked for common binary/image formats.
+- Back up your local `database/` and `uploads/` directories as application data. They are deliberately excluded from Git.
+
+The `/owner` route is Owner-only. Normal users receive a forbidden response from Owner APIs and cannot access the dashboard. The authenticated file download route requires a valid session; public browsing pages are a later phase.
