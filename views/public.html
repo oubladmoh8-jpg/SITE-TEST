@@ -1,0 +1,45 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="theme-color" content="#0b0d16">
+  <meta name="description" content="{{META_DESCRIPTION}}">
+  <title>{{PAGE_TITLE}} · C8B</title>
+  <link rel="icon" href="/assets/logo.svg" type="image/svg+xml">
+  <link rel="stylesheet" href="/css/public.css">
+  <script src="/js/public.js" defer></script>
+</head>
+<body>
+  <a class="skip-link" href="#main-content">Skip to content</a>
+  <header class="site-header">
+    <div class="header-inner">
+      <a class="brand" href="/" aria-label="C8B home">
+        <img class="brand-logo" src="/assets/logo.jpeg" data-fallback="/assets/logo.svg" alt="C8B logo" width="42" height="42">
+        <span class="brand-name">C8B<span class="brand-dot">.</span></span>
+      </a>
+      <button class="nav-toggle" type="button" aria-expanded="false" aria-controls="primary-nav" aria-label="Open navigation"><span></span><span></span><span></span></button>
+      <nav class="primary-nav" id="primary-nav" aria-label="Main navigation">
+        <a href="/" {{NAV_HOME}}>Home</a>
+        <a href="/projects" {{NAV_PROJECTS}}>Projects</a>
+        <a href="/about" {{NAV_ABOUT}}>About</a>
+        <a href="/contact" {{NAV_CONTACT}}>Contact</a>
+      </nav>
+      <div class="header-actions">{{HEADER_ACTIONS}}</div>
+    </div>
+  </header>
+  <main id="main-content">{{CONTENT}}</main>
+  <footer class="site-footer">
+    <div class="footer-main">
+      <div class="footer-brand">
+        <a class="brand" href="/" aria-label="C8B home"><img class="brand-logo" src="/assets/logo.jpeg" data-fallback="/assets/logo.svg" alt="" width="38" height="38"><span class="brand-name">C8B<span class="brand-dot">.</span></span></a>
+        <p>A home for projects, tools, games, and the people who make them.</p>
+      </div>
+      <div class="footer-links"><strong>Explore</strong><a href="/">Home</a><a href="/projects">Projects</a><a href="/about">About C8B</a><a href="/contact">Contact</a></div>
+      <div class="footer-links"><strong>Community</strong><a href="https://discord.gg/3rV8GwSfSw" target="_blank" rel="noopener noreferrer">Join Discord ↗</a><a href="https://youtube.com/@cha8abb?si=MW5Gg5SKqKh9wWaR" target="_blank" rel="noopener noreferrer">YouTube ↗</a></div>
+    </div>
+    <div class="footer-bottom"><span>© <span id="current-year"></span> C8B. Built to share.</span><span>Build. Create. Share.</span></div>
+  </footer>
+  <div id="toast" class="toast" role="status" aria-live="polite" hidden></div>
+</body>
+</html>
