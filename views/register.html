@@ -1,0 +1,54 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="theme-color" content="#0b0d16">
+  <title>Create account · C8B</title>
+  <link rel="stylesheet" href="/css/auth.css">
+  <script src="/js/auth.js" defer></script>
+</head>
+<body data-page="register">
+  <main class="auth-shell">
+    <section class="brand-panel" aria-label="C8B introduction">
+      <a class="brand" href="/login" aria-label="C8B home"><span class="brand-mark">C8</span><span>C8B</span></a>
+      <div class="brand-copy">
+        <p class="eyebrow">Your next idea starts here</p>
+        <h1>Start building<br><span>your own thing.</span></h1>
+        <p class="muted">Create an account to join C8B.</p>
+      </div>
+      <p class="brand-footer">Build. Create. Share.</p>
+    </section>
+    <section class="form-panel">
+      <div class="mobile-brand"><span class="brand-mark">C8</span> C8B</div>
+      <div class="form-wrap">
+        <p class="eyebrow">Get started</p>
+        <h2>Create your account</h2>
+        <p class="subheading">A few details and you’re in.</p>
+        <div class="notice" id="auth-notice" role="status" aria-live="polite" hidden></div>
+        <form id="register-form" novalidate>
+          <input type="hidden" name="csrfToken" value="">
+          <label for="username">Username</label>
+          <input id="username" name="username" type="text" autocomplete="username" minlength="3" maxlength="24" pattern="[A-Za-z0-9_]{3,24}" required>
+          <small>3–24 characters: letters, numbers, and underscores.</small>
+          <label for="email">Email address</label>
+          <input id="email" name="email" type="email" autocomplete="email" maxlength="254" required>
+          <label for="password">Password</label>
+          <input id="password" name="password" type="password" autocomplete="new-password" minlength="12" maxlength="128" required>
+          <small>At least 12 characters, with lowercase, uppercase, and a number.</small>
+          <label for="confirmPassword">Confirm password</label>
+          <input id="confirmPassword" name="confirmPassword" type="password" autocomplete="new-password" minlength="12" maxlength="128" required>
+          <button class="primary-button" type="submit">Create account <span aria-hidden="true">→</span></button>
+        </form>
+        <div class="divider"><span>or sign up with</span></div>
+        <div class="oauth-buttons">
+          <a class="oauth-button" href="/auth/google" id="google-login">Google</a>
+          <a class="oauth-button" href="/auth/discord" id="discord-login">Discord</a>
+        </div>
+        <p class="switch-copy">Already have an account? <a href="/login">Sign in</a></p>
+        <p class="fine-print">By creating an account, you agree to use C8B responsibly.</p>
+      </div>
+    </section>
+  </main>
+</body>
+</html>
