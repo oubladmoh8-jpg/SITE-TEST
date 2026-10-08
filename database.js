@@ -89,6 +89,36 @@ db.exec(`
   CREATE INDEX IF NOT EXISTS idx_oauth_accounts_user_id ON oauth_accounts(user_id);
 `);
 
+// Forward-compatible schema migration: keep existing Phase 2 SQLite databases usable.
+function ensureColumn(table, column, definition) {
+  const columns = db.prepare(`PRAGMA table_info(${table})`).all();
+  if (!columns.some((item) => item.name === column)) {
+    db.exec(`ALTER TABLE ${table} ADD COLUMN ${column} ${definition}`);
+  }
+}
+
+ensureColumn('projects', 'version', "TEXT NOT NULL DEFAULT '1.0.0'");
+ensureColumn('projects', 'featured', 'INTEGER NOT NULL DEFAULT 0 CHECK (featured IN (0, 1))');
+ensureColumn('projects', 'icon_path', 'TEXT');
+ensureColumn('projects', 'banner_path', 'TEXT');
+ensureColumn('projects', 'screenshots_json', "TEXT NOT NULL DEFAULT '[]'");
+ensureColumn('projects', 'features_json', "TEXT NOT NULL DEFAULT '[]'");
+ensureColumn('projects', 'requirements', "TEXT NOT NULL DEFAULT ''");
+ensureColumn('projects', 'changelog', "TEXT NOT NULL DEFAULT ''");
+ensureColumn('projects', 'external_links_json', "TEXT NOT NULL DEFAULT '[]'");
+ensureColumn('project_files', 'version', "TEXT NOT NULL DEFAULT '1.0.0'");
+ensureColumn('project_files', 'status', "TEXT NOT NULL DEFAULT 'active' CHECK (status IN ('active', 'inactive'))");
+db.exec(`
+  CREATE INDEX IF NOT EXISTS idx_projects_featured ON projects(featured, created_at);
+  CREATE INDEX IF NOT EXISTS idx_project_files_status ON project_files(status, created_at);
+  CREATE INDEX IF NOT EXISTS idx_downloads_date ON downloads(downloaded_at);
+  INSERT OR IGNORE INTO site_settings (key, value) VALUES
+    ('site_name', 'C8B'),
+    ('site_description', 'Build. Create. Share.'),
+    ('default_project_status', 'draft'),
+    ('upload_max_mb', '100');
+`);
+
 const statements = {
   findUserById: db.prepare('SELECT id, username, email, password_hash, role, is_active, created_at FROM users WHERE id = ?'),
   findUserByUsername: db.prepare('SELECT * FROM users WHERE username = ? COLLATE NOCASE'),
