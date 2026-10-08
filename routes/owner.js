@@ -120,12 +120,26 @@ function fileSignatureValid(file, imageOnly = false) {
     if (ext === '.msi') return starts(0xd0,0xcf,0x11,0xe0,0xa1,0xb1,0x1a,0xe1);
     if (ext === '.deb') return header.subarray(0, 8).toString('ascii') === '!<arch>\\n';
     if (ext === '.rpm') return starts(0xed,0xab,0xee,0xdb);
-    if (ext === '.dmg') return header.subarray(0, 4).toString('ascii') === 'koly' || header.subarray(0, 4).toString('ascii') === 'encr' || header.subarray(0, 4).toString('ascii') === 'mish';
+    if (ext === '.dmg') {
+      try {
+        const stat = fs.statSync(file.path);
+        if (stat.size < 512) return false;
+        const tailFd = fs.openSync(file.path, 'r');
+        const tail = Buffer.alloc(512);
+        fs.readSync(tailFd, tail, 0, 512, stat.size - 512);
+        fs.closeSync(tailFd);
+        return tail.subarray(0, 4).toString('ascii') === 'koly';
+      } catch { return false; }
+    }
     if (ext === '.tar') return header.subarray(257, 262).toString('ascii') === 'ustar';
   }
   if (imageOnly) return false;
   if (ext === '.json') {
-    try { JSON.parse(fs.readFileSync(file.path, 'utf8')); return true; } catch { return false; }
+    try {
+      if (fs.statSync(file.path).size > 2 * 1024 * 1024) return false;
+      JSON.parse(fs.readFileSync(file.path, 'utf8'));
+      return true;
+    } catch { return false; }
   }
   return true;
 }
