@@ -4,12 +4,14 @@ C8B now has a PHP front controller intended for PHP shared hosting such as Infin
 
 ## Runtime
 - PHP 8.1+ recommended, with PDO MySQL and Fileinfo enabled (mbstring is recommended).
-- A MySQL database created in the hosting control panel.
+- A MySQL database created in the hosting control panel. The PHP app creates its tables, but shared hosts generally do not let an app create the database itself.
+- The `pdo_mysql` extension enabled for the exact PHP runtime serving the site (not just another installed PHP version).
 - Apache with mod_rewrite / .htaccess enabled.
 
 ## Configuration
-- Copy php/database.config.example.php to php/database.config.php and enter the database connection details provided by the host.
-- Upload the repository files to the hosting web root. If the users table does not exist, PHP attempts to create the tables using database/schema.mysql.sql on the first successful database connection.
+- Create a MySQL database and database user in your host's control panel first. Copy `php/database.config.example.php` to `php/database.config.php`, then enter the exact host, database name, username, and password provided by the host. Do not commit the real config file.
+- Upload the repository files to the hosting web root. After a successful connection, PHP creates any missing tables from `database/schema.mysql.sql`, including when a database was only partially initialized.
+- For local development, verify the same PHP binary used by `php -S` has the MySQL PDO driver: run `php --ini` and `php -m` and confirm both `PDO` and `pdo_mysql` are listed. Installing a package for PHP 8.3 will not enable it in a PHP 8.4 runtime; restart the local PHP server after enabling the correct extension.
 - The real php/database.config.php is excluded from Git. Never publish database credentials.
 
 ## Default Owner login
