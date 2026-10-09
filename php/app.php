@@ -71,7 +71,60 @@ function upload(string $field,string $dest,array $exts,int $max): array{
  $mime=function_exists('finfo_open')?(new finfo(FILEINFO_MIME_TYPE))->file($dest.'/'.$stored):'application/octet-stream';
  return ['original'=>$name,'stored'=>$stored,'size'=>(int)$f['size'],'mime'=>$mime?:'application/octet-stream'];
 }
-function render_auth(string $file): never{$html=@file_get_contents(rootdir().'/views/'.$file)?:'';$g=false;$d=false;if(!$g)$html=preg_replace('~<a class="oauth-button" href="/auth/google" id="google-login">Google</a>~','',$html)??$html;if(!$d)$html=preg_replace('~<a class="oauth-button" href="/auth/discord" id="discord-login">Discord</a>~','',$html)??$html;if(!$g&&!$d)$html=preg_replace('~<div class="divider">[\s\S]*?</div>\s*<div class="oauth-buttons">[\s\S]*?</div>~','',$html)??$html;header('Content-Type: text/html; charset=utf-8');header('Cache-Control: no-store, private');echo $html;exit;}
+
+function oauth_http(string $url,?string $post=null,array $headers=[]): array {
+ if(!function_exists('curl_init'))throw new RuntimeException('The hosting PHP cURL extension is required for OAuth sign-in.');
+ $ch=curl_init($url);curl_setopt_array($ch,[CURLOPT_RETURNTRANSFER=>true,CURLOPT_FOLLOWLOCATION=>false,CURLOPT_CONNECTTIMEOUT=>10,CURLOPT_TIMEOUT=>20,CURLOPT_HTTPHEADER=>$headers]);
+ if($post!==null){curl_setopt($ch,CURLOPT_POST,true);curl_setopt($ch,CURLOPT_POSTFIELDS,$post);}
+ $raw=curl_exec($ch);$status=(int)curl_getinfo($ch,CURLINFO_HTTP_CODE);$error=curl_error($ch);curl_close($ch);
+ if($raw===false||$status<200||$status>=300)throw new RuntimeException('OAuth provider request failed: '.$status.' '.$error);
+ $json=json_decode((string)$raw,true);if(!is_array($json))throw new RuntimeException('OAuth provider returned invalid data.');return $json;
+}
+function oauth_callback_url(string $provider): string {
+ $key=strtoupper($provider).'_CALLBACK_URL';$configured=getenv($key);
+ if($configured)return $configured;
+ $scheme=(!empty($_SERVER['HTTPS'])&&$_SERVER['HTTPS']!=='off')?'https':'http';
+ $host=(string)($_SERVER['HTTP_HOST']??'localhost');
+ if(!preg_match('/^[A-Za-z0-9.-]+(?::[0-9]{1,5})?$/',$host))throw new RuntimeException('Configure the OAuth callback URL explicitly.');
+ return $scheme.'://'.$host.'/auth/'.$provider.'/callback';
+}
+function oauth_start(string $provider): never {
+ $id=getenv(strtoupper($provider).'_CLIENT_ID');$secret=getenv(strtoupper($provider).'_CLIENT_SECRET');
+ if(!$id||!$secret)go('/login?error=oauth_unavailable');
+ $state=bin2hex(random_bytes(32));$_SESSION['oauth_state_'.$provider]=$state;
+ if($provider==='google')$base='https://accounts.google.com/o/oauth2/v2/auth';
+ else $base='https://discord.com/oauth2/authorize';
+ $scope=$provider==='google'?'openid email profile':'identify email';
+ $url=$base.'?'.http_build_query(['client_id'=>$id,'redirect_uri'=>oauth_callback_url($provider),'response_type'=>'code','scope'=>$scope,'state'=>$state]);
+ go($url,302);
+}
+function oauth_callback(string $provider): never {
+ try {
+  $expected=(string)($_SESSION['oauth_state_'.$provider]??'');unset($_SESSION['oauth_state_'.$provider]);
+  if(!$expected||!isset($_GET['state'])||!is_string($_GET['state'])||!hash_equals($expected,$_GET['state'])||empty($_GET['code'])||!is_string($_GET['code']))throw new RuntimeException('OAuth state or authorization code was invalid.');
+  $id=getenv(strtoupper($provider).'_CLIENT_ID');$secret=getenv(strtoupper($provider).'_CLIENT_SECRET');if(!$id||!$secret)throw new RuntimeException('OAuth provider is not configured.');
+  $tokenUrl=$provider==='google'?'https://oauth2.googleapis.com/token':'https://discord.com/api/oauth2/token';
+  $token=oauth_http($tokenUrl,http_build_query(['client_id'=>$id,'client_secret'=>$secret,'code'=>$_GET['code'],'grant_type'=>'authorization_code','redirect_uri'=>oauth_callback_url($provider)]),['Content-Type: application/x-www-form-urlencoded','Accept: application/json']);
+  if(empty($token['access_token']))throw new RuntimeException('OAuth provider did not return an access token.');
+  if($provider==='google'){$profile=oauth_http('https://openidconnect.googleapis.com/v1/userinfo',null,['Authorization: Bearer '.$token['access_token'],'Accept: application/json']);$email=(string)($profile['email']??'');$verified=($profile['email_verified']??false)===true;$display=(string)($profile['name']??$profile['given_name']??'user');$providerId=(string)($profile['sub']??'');}
+  else{$profile=oauth_http('https://discord.com/api/users/@me',null,['Authorization: Bearer '.$token['access_token'],'Accept: application/json']);$email=(string)($profile['email']??'');$verified=($profile['verified']??false)===true;$display=(string)($profile['global_name']??$profile['username']??'user');$providerId=(string)($profile['id']??'');}
+  $email=strtolower(trim($email));if(!$verified||!filter_var($email,FILTER_VALIDATE_EMAIL)||$providerId==='')throw new RuntimeException('A verified email address is required for OAuth login.');
+  $linked=row('SELECT user_id FROM oauth_accounts WHERE provider=? AND provider_user_id=?',[$provider,$providerId]);
+  if($linked){$account=row('SELECT * FROM users WHERE id=? AND is_active=1',[(int)$linked['user_id']]);if(!$account)throw new RuntimeException('This account is unavailable.');}
+  else{
+   if(row('SELECT id FROM users WHERE email=? LIMIT 1',[$email]))throw new RuntimeException('An account with this email already exists. Sign in with your password first; automatic account linking is disabled.');
+   $base=preg_replace('/[^a-z0-9_]/','_',strtolower($display))??'user';$base=trim(substr($base,0,8),'_')?:'user';$username='oauth_'.$base.'_'.bin2hex(random_bytes(3));
+   while(row('SELECT id FROM users WHERE username=? LIMIT 1',[$username]))$username='oauth_'.$base.'_'.bin2hex(random_bytes(3));
+   db()->beginTransaction();
+   try{q('INSERT INTO users(username,email,password_hash,role) VALUES(?,?,NULL,?)',[$username,$email,'user']);$userId=(int)db()->lastInsertId();q('INSERT INTO oauth_accounts(user_id,provider,provider_user_id) VALUES(?,?,?)',[$userId,$provider,$providerId]);db()->commit();}
+   catch(Throwable $e){if(db()->inTransaction())db()->rollBack();throw $e;}
+   $account=row('SELECT * FROM users WHERE id=?',[$userId]);
+  }
+  session_regenerate_id(true);$_SESSION['user_id']=(int)$account['id'];$_SESSION['csrfToken']=bin2hex(random_bytes(32));go('/app');
+ }catch(Throwable $e){error_log('C8B OAuth callback failed: '.$e->getMessage());go('/login?error=oauth_failed');}
+}
+
+function render_auth(string $file): never{$html=@file_get_contents(rootdir().'/views/'.$file)?:'';$g=(bool)(getenv('GOOGLE_CLIENT_ID')&&getenv('GOOGLE_CLIENT_SECRET'));$d=(bool)(getenv('DISCORD_CLIENT_ID')&&getenv('DISCORD_CLIENT_SECRET'));if(!$g)$html=preg_replace('~<a class="oauth-button" href="/auth/google" id="google-login">Google</a>~','',$html)??$html;if(!$d)$html=preg_replace('~<a class="oauth-button" href="/auth/discord" id="discord-login">Discord</a>~','',$html)??$html;if(!$g&&!$d)$html=preg_replace('~<div class="divider">[\s\S]*?</div>\s*<div class="oauth-buttons">[\s\S]*?</div>~','',$html)??$html;header('Content-Type: text/html; charset=utf-8');header('Cache-Control: no-store, private');echo $html;exit;}
 function page(string $title,string $desc,string $active,string $content): void{$shell=@file_get_contents(rootdir().'/views/public.html')?:'';$u=user_now();$actions=$u?'<button class="button button-secondary button-small" type="button" data-logout>Sign out</button>':'<a class="button button-secondary button-small" href="/login">Sign in</a><a class="button button-primary button-small" href="/register">Join C8B</a>';$replace=['{{PAGE_TITLE}}'=>h($title),'{{META_DESCRIPTION}}'=>h(substr($desc,0,250)),'{{HEADER_ACTIONS}}'=>$actions,'{{CONTENT}}'=>$content,'{{NAV_HOME}}'=>$active==='home'?'aria-current="page"':'','{{NAV_PROJECTS}}'=>in_array($active,['projects','detail'],true)?'aria-current="page"':'','{{NAV_ABOUT}}'=>$active==='about'?'aria-current="page"':'','{{NAV_CONTACT}}'=>$active==='contact'?'aria-current="page"':''];echo strtr($shell,$replace);}
 function error_page(int $status,string $heading,string $message): never{http_response_code($status);page(($status===404?'404':($status===403?'403':'500')).' — '.$heading,$message,'','<section class="error-wrap"><div><span class="error-code">'.$status.' / C8B</span><h1>'.h($heading).'</h1><p>'.h($message).'</p><a class="button button-primary" href="/">Back to home</a> <a class="button button-secondary" href="/projects">Explore projects</a></div></section>');exit;}
 function card(array $p): string{$icon=murl($p['icon_path']??'');$cat=$p['category_name']?:'Uncategorized';$slug=rawurlencode($p['slug']);$img=$icon?'<img src="'.$icon.'" alt="" loading="lazy">':'<span class="cover-monogram">'.h(strtoupper(substr($p['title'],0,2))).'</span>';$desc=h($p['description']?:'A C8B project. Explore the details and available files.');$download=(int)$p['file_count']>0?'<a class="button button-secondary button-small" href="/projects/'.$slug.'#downloads">Download</a>':'';return '<article class="project-card" data-project-card data-name="'.h(strtolower($p['title'].' '.$p['description'])).'" data-category="'.h($p['category_slug']??'').'" data-version="'.h($p['version']).'"><a class="project-cover" href="/projects/'.$slug.'">'.$img.'</a><div class="project-body"><div class="project-meta"><span class="pill pill-accent">'.h($cat).'</span><span class="pill">v'.h($p['version']).'</span>'.((int)$p['featured']?'<span class="pill">Featured</span>':'').'</div><h3><a href="/projects/'.$slug.'">'.h($p['title']).'</a></h3><p>'.$desc.'</p><div class="project-card-foot"><span class="download-count">↓ '.number_format((int)$p['download_count']).' downloads</span><div class="project-actions"><a class="text-link" href="/projects/'.$slug.'">View project →</a>'.$download.'</div></div></div></article>';}
@@ -111,6 +164,9 @@ $p=req_path();$m=req_method();$u=user_now();
 try{
  if($p==='/health'&&$m==='GET')api(['status'=>'ok','app'=>'C8B','runtime'=>'PHP']);
  if($p==='/api/auth/csrf'&&$m==='GET')api(['csrfToken'=>csrf()]);
+ if(preg_match('~^/auth/(google|discord)(/callback)?$~',$p,$oauthMatch)){
+  $provider=$oauthMatch[1];if(!empty($oauthMatch[2]))oauth_callback($provider);oauth_start($provider);
+ }
  if($p==='/setup'&&$m==='GET'){
   if(nrows("SELECT COUNT(*) n FROM users WHERE role='owner'")>0)go('/login');
   $html='<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><meta name="theme-color" content="#0b0d16"><title>Set up C8B Owner</title><link rel="stylesheet" href="/css/auth.css"></head><body data-page="setup"><main class="auth-shell"><section class="brand-panel"><a class="brand" href="/"><img class="brand-logo" src="/assets/logo.svg" alt="C8B"><span>C8B</span></a><div class="brand-copy"><p class="eyebrow">First-time setup</p><h1>Make this site<br><span>your own.</span></h1><p class="muted">Create the first Owner account to manage C8B.</p></div><p class="brand-footer">Build. Create. Share.</p></section><section class="form-panel"><div class="form-wrap"><p class="eyebrow">Secure setup</p><h2>Create Owner account</h2><p class="subheading">This one-time setup is available only until an Owner exists.</p><div class="notice" id="setup-notice" role="status" aria-live="polite" hidden></div><form id="setup-form"><label for="setup-username">Username</label><input id="setup-username" name="username" minlength="3" maxlength="24" pattern="[A-Za-z0-9_]{3,24}" required><label for="setup-email">Email address</label><input id="setup-email" name="email" type="email" maxlength="254" required><label for="setup-password">Password</label><input id="setup-password" name="password" type="password" minlength="12" maxlength="128" required><small>At least 12 characters, with lowercase, uppercase, and a number.</small><label for="setup-confirm">Confirm password</label><input id="setup-confirm" name="confirmPassword" type="password" minlength="12" maxlength="128" required><button class="primary-button" type="submit">Create Owner account <span>→</span></button></form></div></section></main><script>const f=document.getElementById("setup-form"),n=document.getElementById("setup-notice");f.addEventListener("submit",async e=>{e.preventDefault();n.hidden=true;if(f.password.value!==f.confirmPassword.value){n.textContent="Passwords do not match.";n.hidden=false;return;}const b=f.querySelector("button");b.disabled=true;try{const c=await fetch("/api/auth/csrf",{credentials:"same-origin"}).then(r=>r.json());const d=Object.fromEntries(new FormData(f));const r=await fetch("/api/setup/owner",{method:"POST",credentials:"same-origin",headers:{"Content-Type":"application/json","X-CSRF-Token":c.csrfToken,Accept:"application/json"},body:JSON.stringify({...d,csrfToken:c.csrfToken})});const v=await r.json();if(!r.ok)throw new Error(v.error||"Setup failed.");location.assign(v.redirect||"/owner");}catch(x){n.textContent=x.message||"Setup failed.";n.hidden=false;b.disabled=false;}});</script></body></html>';

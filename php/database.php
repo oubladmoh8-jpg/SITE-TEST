@@ -25,6 +25,16 @@ function c8b_database(): PDO
         throw new RuntimeException('The PHP database configuration must return an array.');
     }
 
+    // Optional OAuth credentials can live in the private config file as well as environment variables.
+    foreach ([
+        'google_client_id' => 'GOOGLE_CLIENT_ID', 'google_client_secret' => 'GOOGLE_CLIENT_SECRET', 'google_callback_url' => 'GOOGLE_CALLBACK_URL',
+        'discord_client_id' => 'DISCORD_CLIENT_ID', 'discord_client_secret' => 'DISCORD_CLIENT_SECRET', 'discord_callback_url' => 'DISCORD_CALLBACK_URL',
+    ] as $configKey => $environmentName) {
+        if ((getenv($environmentName) === false || getenv($environmentName) === '') && !empty($config[$configKey])) {
+            putenv($environmentName . '=' . $config[$configKey]);
+        }
+    }
+
     $readConfig = static function (string $key, $default = '') use ($config) {
         $environmentName = 'C8B_DB_' . strtoupper($key);
         $environmentValue = getenv($environmentName);
