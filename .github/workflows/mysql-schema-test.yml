@@ -1,4 +1,4 @@
-name: MySQL schema integration test
+name: SQLite file database test
 
 on:
   push:
@@ -8,21 +8,15 @@ on:
   workflow_dispatch:
 
 jobs:
-  mysql-schema:
+  sqlite-schema:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-      - name: Start MySQL server
-        run: |
-          sudo systemctl start mysql
-          mysql --host=127.0.0.1 --user=root --password=root -e "CREATE DATABASE site_test;"
-          mysql --host=127.0.0.1 --user=root --password=root -e "CREATE USER 'site_test'@'127.0.0.1' IDENTIFIED BY 'root';"
-          mysql --host=127.0.0.1 --user=root --password=root -e "GRANT ALL PRIVILEGES ON site_test.* TO 'site_test'@'127.0.0.1';"
-      - name: Set up PHP with MySQL driver
+      - name: Set up PHP with SQLite driver
         uses: shivammathur/setup-php@v2
         with:
           php-version: '8.4'
-          extensions: pdo_mysql
+          extensions: pdo_sqlite
           coverage: none
       - name: Check PHP syntax
         run: |
@@ -30,10 +24,4 @@ jobs:
           php -l php/database.php
           php -l php/app.php
       - name: Create schema and verify tables and foreign keys
-        env:
-          C8B_DB_HOST: 127.0.0.1
-          C8B_DB_PORT: 3306
-          C8B_DB_DATABASE: site_test
-          C8B_DB_USERNAME: site_test
-          C8B_DB_PASSWORD: root
         run: php tests/mysql-schema-smoke.php
