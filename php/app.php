@@ -47,18 +47,16 @@ function c8b_schema_if_needed(PDO $pdo): void {
  if ($done) return;
  $done = true;
 
- // Repair partially initialized databases too, not only databases with no users table.
+ // Create or repair the local SQLite file database without requiring a MySQL server.
  $requiredTables = ['users', 'categories', 'projects', 'project_files', 'downloads', 'oauth_accounts', 'site_settings', 'contact_messages'];
  $placeholders = implode(',', array_fill(0, count($requiredTables), '?'));
- $check = $pdo->prepare(
-  'SELECT TABLE_NAME FROM information_schema.TABLES WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME IN (' . $placeholders . ')'
- );
+ $check = $pdo->prepare("SELECT name FROM sqlite_master WHERE type='table' AND name IN (" . $placeholders . ")");
  $check->execute($requiredTables);
- $existingTables = array_column($check->fetchAll(PDO::FETCH_ASSOC), 'TABLE_NAME');
+ $existingTables = array_column($check->fetchAll(PDO::FETCH_ASSOC), 'name');
  if (count(array_diff($requiredTables, $existingTables)) > 0) {
-  $file = dirname(__DIR__) . '/database/schema.mysql.sql';
+  $file = dirname(__DIR__) . '/database/schema.sqlite.sql';
   $sql = @file_get_contents($file);
-  if ($sql === false) throw new RuntimeException('MySQL schema file missing.');
+  if ($sql === false) throw new RuntimeException('SQLite schema file missing.');
   $sql = preg_replace('/^\\s*--.*$/m', '', $sql) ?? $sql;
   foreach (preg_split('/;\\s*(?:\\r?\\n|$)/', $sql) ?: [] as $statement) {
    $statement = trim($statement);
@@ -209,7 +207,7 @@ function owner_api(string $p,string $m): never{
  if($p==='/api/owner/users'&&$m==='GET')api(['users'=>rows('SELECT id,username,email,role,created_at,updated_at,is_active FROM users ORDER BY created_at DESC')]);
  if($p==='/api/owner/downloads'&&$m==='GET')api(['downloads'=>rows('SELECT d.id,d.downloaded_at,d.user_id,u.username,f.id file_id,f.original_name,f.version,p.id project_id,p.title project_title FROM downloads d JOIN project_files f ON f.id=d.project_file_id JOIN projects p ON p.id=f.project_id LEFT JOIN users u ON u.id=d.user_id ORDER BY d.downloaded_at DESC LIMIT 200')]);
  if($p==='/api/owner/settings'&&$m==='GET'){$s=[];foreach(rows('SELECT * FROM site_settings ORDER BY 1') as $r)$s[$r['key']]=$r['value'];api(['settings'=>$s,'maxUploadMb'=>(int)(getenv('UPLOAD_MAX_MB')?:100)]);}
- if($p==='/api/owner/settings'&&$m==='PUT'){$b=body();$vals=['site_name'=>txt($b['site_name']??'',80),'site_description'=>txt($b['site_description']??'',500),'default_project_status'=>in_array($b['default_project_status']??'', ['draft','published','archived'],true)?$b['default_project_status']:'draft'];foreach($vals as $k=>$v)q('INSERT INTO site_settings VALUES(?,?,CURRENT_TIMESTAMP) ON DUPLICATE KEY UPDATE value=VALUES(value),updated_at=CURRENT_TIMESTAMP',[$k,$v]);$s=[];foreach(rows('SELECT * FROM site_settings ORDER BY 1') as $r)$s[$r['key']]=$r['value'];api(['success'=>true,'settings'=>$s]);}
+ if($p==='/api/owner/settings'&&$m==='PUT'){$b=body();$vals=['site_name'=>txt($b['site_name']??'',80),'site_description'=>txt($b['site_description']??'',500),'default_project_status'=>in_array($b['default_project_status']??'', ['draft','published','archived'],true)?$b['default_project_status']:'draft'];foreach($vals as $k=>$v)q('INSERT INTO site_settings ("key","value",updated_at) VALUES(?,?,CURRENT_TIMESTAMP) ON CONFLICT("key") DO UPDATE SET "value"=excluded."value",updated_at=CURRENT_TIMESTAMP',[$k,$v]);$s=[];foreach(rows('SELECT * FROM site_settings ORDER BY 1') as $r)$s[$r['key']]=$r['value'];api(['success'=>true,'settings'=>$s]);}
  api(['error'=>'Not found.'],404);
 }
 
