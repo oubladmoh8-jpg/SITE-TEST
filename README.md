@@ -19,6 +19,6 @@ After configuring the database connection and uploading the files, open the site
 ## Important
 - Original Node.js files remain as a reference and are not invoked by the PHP entry point.
 - Credentials may be supplied with C8B_DB_HOST, C8B_DB_PORT, C8B_DB_DATABASE, C8B_DB_USERNAME, C8B_DB_PASSWORD, and C8B_DB_CHARSET environment variables, or php/database.config.php.
-- Google/Discord OAuth is not implemented in this PHP edition; the OAuth controls are hidden so users do not encounter broken sign-in links.
+- Google and Discord OAuth are supported when their client IDs, client secrets, and callback URLs are configured in the private PHP config file. Leave these values blank to hide the OAuth controls.
 - SQLite records and runtime uploads are not automatically imported.
 - Upload sizes are subject to the limits of the hosting plan and PHP configuration.
