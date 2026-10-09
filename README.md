@@ -12,21 +12,13 @@ C8B now has a PHP front controller intended for PHP shared hosting such as Infin
 - Upload the repository files to the hosting web root. If the users table does not exist, PHP attempts to create the tables using database/schema.mysql.sql on the first successful database connection.
 - The real php/database.config.php is excluded from Git. Never publish database credentials.
 
-## Owner account
-Generate a PHP bcrypt hash locally with:
-```php
-<?php echo password_hash('USE_A_STRONG_PASSWORD', PASSWORD_BCRYPT, ['cost' => 12]);
-```
-Then insert the account into MySQL, replacing the sample values:
-```sql
-INSERT INTO users (username, email, password_hash, role, is_active)
-VALUES ('admin', 'your-email@example.com', '$2y$12$REPLACE_WITH_THE_COMPLETE_GENERATED_HASH', 'owner', 1);
-```
-Do not use the sample hash literally.
+## First-time setup
+
+After configuring the database connection and uploading the files, open the site in a browser. If no Owner account exists yet, C8B displays a one-time setup screen. Create the first Owner account there; once it exists, that setup screen is permanently disabled and normal registration creates regular users only.
 
 ## Important
 - Original Node.js files remain as a reference and are not invoked by the PHP entry point.
 - Credentials may be supplied with C8B_DB_HOST, C8B_DB_PORT, C8B_DB_DATABASE, C8B_DB_USERNAME, C8B_DB_PASSWORD, and C8B_DB_CHARSET environment variables, or php/database.config.php.
-- Google/Discord OAuth is not yet implemented in this PHP edition; the OAuth controls are hidden when credentials are not configured.
+- Google/Discord OAuth is not implemented in this PHP edition; the OAuth controls are hidden so users do not encounter broken sign-in links.
 - SQLite records and runtime uploads are not automatically imported.
 - Upload sizes are subject to the limits of the hosting plan and PHP configuration.

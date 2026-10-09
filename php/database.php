@@ -4,8 +4,8 @@ declare(strict_types=1);
 /**
  * Separate PDO/MySQL connection for the PHP migration.
  *
- * This file deliberately does not create, alter, or seed tables. Import
- * database/schema.mysql.sql explicitly after creating a MySQL database.
+ * The connection itself does not create tables. The PHP front controller
+ * initializes database/schema.mysql.sql on first run when the users table is absent.
  *
  * Configure either C8B_DB_* environment variables or copy
  * database.config.example.php to database.config.php and fill in the values.
