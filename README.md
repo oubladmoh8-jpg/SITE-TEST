@@ -5,7 +5,7 @@ C8B uses PHP and a single SQLite database file instead of requiring a MySQL serv
 ## Requirements
 
 - PHP 8.1+ with `pdo_sqlite` and Fileinfo enabled (`mbstring` recommended).
-- Apache with `.htaccess` / mod_rewrite enabled.
+- Apache with `.htaccess` / mod_rewrite enabled for production, or the included `router.php` when using PHP's built-in development server.
 - PHP must have permission to write to the `database/` folder. The repository's `.htaccess` blocks direct web access to that folder.
 
 ## Getting started
