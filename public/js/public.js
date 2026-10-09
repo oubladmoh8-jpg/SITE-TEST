@@ -54,8 +54,8 @@
     button.textContent = 'Signing out…';
     try {
       const csrfResponse = await fetch('/api/auth/csrf', { credentials: 'same-origin', headers: { Accept: 'application/json' } });
-      const csrf = await csrfResponse.json();
-      if (!csrfResponse.ok || !csrf.csrfToken) throw new Error('Could not verify sign out. Refresh and try again.');
+      const csrf = await csrfResponse.json().catch(() => ({}));
+      if (!csrfResponse.ok || !csrf.csrfToken) throw new Error(csrf.error || 'Could not verify sign out. Refresh and try again.');
       const response = await fetch('/api/auth/logout', {
         method: 'POST', credentials: 'same-origin',
         headers: { Accept: 'application/json', 'X-CSRF-Token': csrf.csrfToken },
@@ -82,8 +82,8 @@
     if (notice) { notice.hidden = true; notice.classList.remove('error'); }
     try {
       const csrfResponse = await fetch('/api/auth/csrf', { credentials: 'same-origin', headers: { Accept: 'application/json' } });
-      const csrfData = await csrfResponse.json();
-      if (!csrfResponse.ok || !csrfData.csrfToken) throw new Error('Could not verify your request. Refresh and try again.');
+      const csrfData = await csrfResponse.json().catch(() => ({}));
+      if (!csrfResponse.ok || !csrfData.csrfToken) throw new Error(csrfData.error || 'Could not verify your request. Refresh and try again.');
       const formData = new FormData(contactForm);
       const payload = Object.fromEntries(formData.entries());
       const response = await fetch('/api/contact', {
