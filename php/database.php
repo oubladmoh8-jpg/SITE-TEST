@@ -2,30 +2,18 @@
 declare(strict_types=1);
 
 /**
- * Separate PDO/MySQL connection for the PHP migration.
- *
- * The connection itself does not create tables. The PHP front controller
- * initializes database/schema.mysql.sql on first run when the users table is absent.
- *
- * Configure either C8B_DB_* environment variables or copy
- * database.config.example.php to database.config.php and fill in the values.
+ * Simple file-based SQLite database. The database is stored at database/c8b.sqlite.
+ * Set C8B_DB_PATH to move it outside the public web directory on production hosting.
  */
 function c8b_database(): PDO
 {
     static $connection = null;
-
-    if ($connection instanceof PDO) {
-        return $connection;
-    }
+    if ($connection instanceof PDO) return $connection;
 
     $configPath = __DIR__ . '/database.config.php';
     $config = is_file($configPath) ? require $configPath : [];
+    if (!is_array($config)) throw new RuntimeException('The database configuration must return an array.');
 
-    if (!is_array($config)) {
-        throw new RuntimeException('The PHP database configuration must return an array.');
-    }
-
-    // Optional OAuth credentials can live in the private config file as well as environment variables.
     foreach ([
         'google_client_id' => 'GOOGLE_CLIENT_ID', 'google_client_secret' => 'GOOGLE_CLIENT_SECRET', 'google_callback_url' => 'GOOGLE_CALLBACK_URL',
         'discord_client_id' => 'DISCORD_CLIENT_ID', 'discord_client_secret' => 'DISCORD_CLIENT_SECRET', 'discord_callback_url' => 'DISCORD_CALLBACK_URL',
@@ -35,57 +23,25 @@ function c8b_database(): PDO
         }
     }
 
-    $readConfig = static function (string $key, $default = '') use ($config) {
-        $environmentName = 'C8B_DB_' . strtoupper($key);
-        $environmentValue = getenv($environmentName);
+    $path = getenv('C8B_DB_PATH');
+    if ($path === false || trim($path) === '') $path = (string)($config['path'] ?? dirname(__DIR__) . '/database/c8b.sqlite');
+    $path = trim($path);
+    if ($path === '') throw new RuntimeException('SQLite database path is empty.');
 
-        if ($environmentValue !== false && $environmentValue !== '') {
-            return $environmentValue;
-        }
-
-        return array_key_exists($key, $config) ? $config[$key] : $default;
-    };
-
-    $host = trim((string) $readConfig('host', 'localhost'));
-    $port = (int) $readConfig('port', 3306);
-    $database = trim((string) $readConfig('database'));
-    $username = trim((string) $readConfig('username'));
-    $password = (string) $readConfig('password');
-    $charset = (string) $readConfig('charset', 'utf8mb4');
-
-    if ($database === '' || $username === '') {
-        throw new RuntimeException(
-            'MySQL is not configured. Set C8B_DB_DATABASE and C8B_DB_USERNAME, ' .
-            'or create php/database.config.php from the example.'
-        );
+    $directory = dirname($path);
+    if (!is_dir($directory) && !mkdir($directory, 0755, true) && !is_dir($directory)) {
+        throw new RuntimeException('Could not create the database folder. Check folder permissions.');
+    }
+    if (!is_file($path) && !is_writable($directory)) {
+        throw new RuntimeException('The database folder is not writable by PHP.');
     }
 
-    if ($host === '' || $port < 1 || $port > 65535) {
-        throw new RuntimeException('The MySQL host or port configuration is invalid.');
-    }
-
-    if (!preg_match('/^[A-Za-z0-9_]+$/', $charset)) {
-        throw new RuntimeException('The configured MySQL character set is invalid.');
-    }
-
-    $dsn = sprintf(
-        'mysql:host=%s;port=%d;dbname=%s;charset=%s',
-        $host,
-        $port,
-        $database,
-        $charset
-    );
-
-    $connection = new PDO($dsn, $username, $password, [
+    $connection = new PDO('sqlite:' . $path, null, null, [
         PDO::ATTR_ERRMODE => PDO::ERRMODE_EXCEPTION,
         PDO::ATTR_DEFAULT_FETCH_MODE => PDO::FETCH_ASSOC,
         PDO::ATTR_EMULATE_PREPARES => false,
-        PDO::ATTR_STRINGIFY_FETCHES => false,
-        PDO::ATTR_TIMEOUT => 5,
     ]);
-
-    // Keep DATETIME values and CURRENT_TIMESTAMP defaults in UTC.
-    $connection->exec("SET time_zone = '+00:00'");
-
+    $connection->exec('PRAGMA foreign_keys = ON');
+    $connection->exec('PRAGMA busy_timeout = 5000');
     return $connection;
 }
