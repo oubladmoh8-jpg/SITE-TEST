@@ -13,18 +13,57 @@ header('X-Content-Type-Options: nosniff');
 header('X-Frame-Options: DENY');
 header('Referrer-Policy: no-referrer');
 
-$pdo = c8b_database();
-c8b_schema_if_needed($pdo);
+try {
+    $pdo = c8b_database();
+    c8b_schema_if_needed($pdo);
+} catch (Throwable $e) {
+    error_log('C8B database bootstrap failed: ' . $e->getMessage());
+    http_response_code(500);
+    header('Cache-Control: no-store');
+    $requestPath = parse_url($_SERVER['REQUEST_URI'] ?? '/', PHP_URL_PATH) ?: '/';
+    $isApiRequest = str_starts_with($requestPath, '/api/');
+    $message = 'The database is not ready. Please check the site database configuration.';
+    $detail = strtolower($e->getMessage());
+    if (str_contains($detail, 'could not find driver')) {
+        $message = 'PHP is missing the PDO MySQL driver (pdo_mysql). Enable it for the PHP version serving this website.';
+    } elseif (str_contains($detail, 'mysql is not configured')) {
+        $message = 'MySQL is not configured. Create php/database.config.php from the example and enter the database details from your hosting control panel.';
+    } elseif ($e instanceof PDOException) {
+        $message = 'Could not connect to MySQL. Verify the database name, host, username, password, and database permissions.';
+    }
+    if ($isApiRequest) {
+        header('Content-Type: application/json; charset=utf-8');
+        echo json_encode(['error' => $message], JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE);
+    } else {
+        header('Content-Type: text/html; charset=utf-8');
+        $safeMessage = htmlspecialchars($message, ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8');
+        echo '<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>C8B setup required</title><style>body{margin:0;background:#0b0d16;color:#f4f5fb;font:16px/1.6 system-ui,sans-serif;display:grid;min-height:100vh;place-items:center}.panel{max-width:680px;margin:24px;padding:32px;border:1px solid #303348;border-radius:18px;background:#141725}h1{margin-top:0}p{color:#c2c6d7}code{color:#c8b8ff}</style></head><body><main class="panel"><h1>C8B needs a database setup</h1><p>' . $safeMessage . '</p><p>For local development, make sure the active PHP runtime has <code>pdo_mysql</code> enabled. On shared hosting, create a MySQL database in the hosting panel and put its exact credentials in <code>php/database.config.php</code>.</p></main></body></html>';
+    }
+    exit;
+}
 
 function c8b_schema_if_needed(PDO $pdo): void {
- static $done=false; if($done)return; $done=true;
- try { $pdo->query('SELECT id FROM users LIMIT 1'); }
- catch(PDOException $e) {
-  if((string)$e->getCode()!=='42S02')throw $e;
-  $file=dirname(__DIR__).'/database/schema.mysql.sql';
-  $sql=@file_get_contents($file); if($sql===false)throw new RuntimeException('MySQL schema file missing.');
-  $sql=preg_replace('/^\s*--.*$/m','',$sql)??$sql;
-  foreach(preg_split('/;\s*(?:\r?\n|$)/',$sql)?:[] as $statement){$statement=trim($statement);if($statement!=='')$pdo->exec($statement);}
+ static $done = false;
+ if ($done) return;
+ $done = true;
+
+ // Repair partially initialized databases too, not only databases with no users table.
+ $requiredTables = ['users', 'categories', 'projects', 'project_files', 'downloads', 'oauth_accounts', 'site_settings', 'contact_messages'];
+ $placeholders = implode(',', array_fill(0, count($requiredTables), '?'));
+ $check = $pdo->prepare(
+  'SELECT TABLE_NAME FROM information_schema.TABLES WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME IN (' . $placeholders . ')'
+ );
+ $check->execute($requiredTables);
+ $existingTables = array_column($check->fetchAll(PDO::FETCH_ASSOC), 'TABLE_NAME');
+ if (count(array_diff($requiredTables, $existingTables)) > 0) {
+  $file = dirname(__DIR__) . '/database/schema.mysql.sql';
+  $sql = @file_get_contents($file);
+  if ($sql === false) throw new RuntimeException('MySQL schema file missing.');
+  $sql = preg_replace('/^\\s*--.*$/m', '', $sql) ?? $sql;
+  foreach (preg_split('/;\\s*(?:\\r?\\n|$)/', $sql) ?: [] as $statement) {
+   $statement = trim($statement);
+   if ($statement !== '') $pdo->exec($statement);
+  }
  }
  // Bootstrap the requested Owner account on a fresh install, or when no Owner exists.
  if ((int)$pdo->query("SELECT COUNT(*) FROM users WHERE role='owner'")->fetchColumn() === 0) {
