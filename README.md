@@ -1,128 +1,32 @@
-# C8B
+# C8B — PHP / MySQL edition
 
-C8B is a Node.js/Express project platform with SQLite-backed accounts, secure sessions, a protected Owner Control Center, public project discovery, and server-hosted downloads.
+C8B now has a PHP front controller intended for PHP shared hosting such as InfinityFree. Existing HTML templates, CSS, JavaScript, logo, and original Node.js source are retained. The PHP entry point handles website pages, local authentication, sessions, contact messages, owner management APIs, uploads, and downloads.
 
-## Requirements
+## Runtime
+- PHP 8.1+ recommended, with PDO MySQL and Fileinfo enabled (mbstring is recommended).
+- A MySQL database created in the hosting control panel.
+- Apache with mod_rewrite / .htaccess enabled.
 
-- Node.js 20 or newer
-- npm
+## Configuration
+- Copy php/database.config.example.php to php/database.config.php and enter the database connection details provided by the host.
+- Upload the repository files to the hosting web root. If the users table does not exist, PHP attempts to create the tables using database/schema.mysql.sql on the first successful database connection.
+- The real php/database.config.php is excluded from Git. Never publish database credentials.
 
-## Run locally
+## Owner account
+Generate a PHP bcrypt hash locally with:
+```php
+<?php echo password_hash('USE_A_STRONG_PASSWORD', PASSWORD_BCRYPT, ['cost' => 12]);
+```
+Then insert the account into MySQL, replacing the sample values:
+```sql
+INSERT INTO users (username, email, password_hash, role, is_active)
+VALUES ('admin', 'your-email@example.com', '$2y$12$REPLACE_WITH_THE_COMPLETE_GENERATED_HASH', 'owner', 1);
+```
+Do not use the sample hash literally.
 
-1. Clone the repository and enter its directory:
-
-   ```sh
-   git clone https://github.com/oubladmoh8-jpg/SITE-TEST.git
-   cd SITE-TEST
-   ```
-
-2. Install dependencies:
-
-   ```sh
-   npm install
-   ```
-
-3. Create your local environment file:
-
-   **Windows PowerShell**
-   ```powershell
-   Copy-Item .env.example .env
-   ```
-
-   **macOS / Linux**
-   ```sh
-   cp .env.example .env
-   ```
-
-4. Generate a session secret and put it in `.env` as `SESSION_SECRET`:
-
-   ```sh
-   node -e "console.log(require('crypto').randomBytes(48).toString('hex'))"
-   ```
-
-5. Generate a strong Owner password hash:
-
-   ```sh
-   node scripts/hash-password.js
-   ```
-
-   Enter a password of at least 12 characters with lowercase, uppercase, and a number. Copy the printed bcrypt hash into `.env` as `OWNER_PASSWORD_HASH`. Do not put the plain password or hash in Git.
-
-6. Set the Owner identity in `.env`:
-
-   ```dotenv
-   OWNER_USERNAME=admin
-   OWNER_EMAIL=your-owner-email@example.com
-   OWNER_PASSWORD_HASH=paste_the_generated_bcrypt_hash_here
-   SESSION_SECRET=paste_a_random_secret_here
-   NODE_ENV=development
-   PORT=3000
-   ```
-
-   Use a unique email address. The Owner account is created/updated on server startup only when `OWNER_PASSWORD_HASH` is a valid bcrypt hash. No default password is supplied. Normal registrations always receive the `user` role and cannot self-promote.
-
-7. Start the application:
-
-   ```sh
-   npm start
-   ```
-
-   For automatic restart while editing:
-   ```sh
-   npm run dev
-   ```
-
-8. Open these local pages:
-
-   - Home: `http://localhost:3000/`
-   - Projects: `http://localhost:3000/projects`
-   - About: `http://localhost:3000/about`
-   - Contact: `http://localhost:3000/contact`
-   - Sign in: `http://localhost:3000/login`
-   - Register: `http://localhost:3000/register`
-   - Owner Control Center: `http://localhost:3000/owner` (Owner account only)
-
-The SQLite database and session store are created under `database/`. Project files and uploaded images are stored locally under `uploads/`; both directories are runtime data and are intentionally ignored by Git.
-
-## Publishing a project
-
-1. Sign in with the Owner credentials configured above and open `/owner`.
-2. Create a category if needed.
-3. Create a project and fill in its title, description, version, category, features, requirements, changelog, and external links.
-4. Save the project, then use the project media controls to upload an icon, banner, and screenshots.
-5. Upload one or more downloadable files in the project's file manager.
-6. Set the project status to **Published**. Draft and archived projects do not appear on the public site.
-7. A normal user can open the published project page, read its details, and sign in to download active files. Downloads stream from this server and are recorded in SQLite.
-
-## Public site and contact
-
-- Public project pages are server-rendered from the SQLite database; project cards, categories, statistics, details, active files, and download counts are dynamic.
-- Downloads require authentication. The Owner dashboard and Owner APIs enforce server-side role checks and are not linked in normal public navigation.
-- Contact form messages are stored in the SQLite `contact_messages` table.
-- The public brand uses `public/assets/logo.jpeg` if it exists; otherwise it displays the included C8B SVG wordmark. The current repository did not contain `logo.jpeg` when this phase was implemented.
-
-## Authentication and proxy behavior
-
-- All website pages require an active signed-in session. Unauthenticated page requests are redirected to `/login`; public static assets, the health endpoint, local login/registration APIs, and configured OAuth callbacks are the deliberate exceptions.
-- An already signed-in regular user visiting `/login` or `/register` is redirected to the home page. The Owner is redirected to `/owner`.
-- Signing out destroys the server session and redirects to `/login`. Protected page responses use `Cache-Control: no-store`.
-- The login and registration pages show Google/Discord options only when the matching provider ID and secret are configured. Local username/email and password authentication remains available without OAuth keys.
-- Express trusts one proxy hop (`app.set('trust proxy', 1)`) for deployments such as GitHub Codespaces. If deploying behind a different proxy topology, set this to match the actual trusted proxy chain.
-
-## Optional OAuth
-
-OAuth is disabled unless both the client ID and client secret are configured for a provider. Register these callback URLs in the relevant provider console and set the matching variables in `.env`:
-
-- Google: `http://localhost:3000/auth/google/callback`
-- Discord: `http://localhost:3000/auth/discord/callback`
-
-OAuth login requires a verified email. OAuth accounts are not automatically linked to an existing password account based only on email. Never commit OAuth credentials.
-
-## Security and deployment notes
-
-- Passwords are hashed with bcrypt; SQL access uses prepared statements.
-- Session cookies are HttpOnly, SameSite=Lax, and Secure in production.
-- Helmet CSP, CSRF verification, and rate limits protect sensitive operations.
-- Uploads use random server-side filenames, extension allowlists, signature checks for common file types, and configurable size limits (`UPLOAD_MAX_MB`, default 100 MB; images up to 10 MB).
-- Configure HTTPS, a stable random `SESSION_SECRET`, and production environment variables before deployment.
-- Back up the local `database/` and `uploads/` directories. Do not commit `.env`, database files, or user uploads.
+## Important
+- Original Node.js files remain as a reference and are not invoked by the PHP entry point.
+- Credentials may be supplied with C8B_DB_HOST, C8B_DB_PORT, C8B_DB_DATABASE, C8B_DB_USERNAME, C8B_DB_PASSWORD, and C8B_DB_CHARSET environment variables, or php/database.config.php.
+- Google/Discord OAuth is not yet implemented in this PHP edition; the OAuth controls are hidden when credentials are not configured.
+- SQLite records and runtime uploads are not automatically imported.
+- Upload sizes are subject to the limits of the hosting plan and PHP configuration.
