@@ -233,8 +233,15 @@
       const result = id
         ? await api(`/api/owner/projects/${id}`, { method: 'PUT', body: payload })
         : await api('/api/owner/projects', { method: 'POST', body: payload });
+      const savedProject = result && result.project;
+      if (!savedProject || Number(savedProject.id) !== Number(id || savedProject.id)) {
+        throw new Error('The server did not confirm the saved project. Please reopen it and verify the changes.');
+      }
       closeDialog('project-dialog');
-      showNotice(id ? 'Project updated.' : 'Project created.');
+      const publicHint = savedProject.status === 'published'
+        ? 'Changes saved and published.'
+        : 'Project saved. It is still a draft/unpublished; set Status to Published for visitors to see it.';
+      showNotice(id ? (savedProject.status === 'published' ? 'Project updated and published.' : publicHint) : (savedProject.status === 'published' ? 'Project created and published.' : 'Project created. It is not public until its Status is Published.'));
       await Promise.all([loadProjects(), loadDashboard(), loadFiles()]);
     } catch (error) { showNotice(error.message, true); }
   }
