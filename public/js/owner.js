@@ -353,7 +353,7 @@
     const input = document.getElementById(`media-${type}`);
     if (!input.files || !input.files[0]) return showNotice('Choose an image first.', true);
     const body = new FormData();
-    body.append('image', input.files[0]);
+    body.append('file', input.files[0]);
     try {
       await api(`/api/owner/projects/${projectId}/media?type=${encodeURIComponent(type)}`, { method: 'POST', body });
       showNotice(`${type === 'screenshot' ? 'Screenshot' : type === 'icon' ? 'Icon' : 'Banner'} uploaded.`);
