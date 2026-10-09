@@ -284,7 +284,7 @@
     const projectId = $('#upload-project').value;
     const body = new FormData();
     body.append('version', $('#upload-version').value || '1.0.0');
-    for (const file of files) body.append('files', file);
+    for (const file of files) body.append('files[]', file);
     const button = form.querySelector('button[type="submit"]');
     button.disabled = true;
     try {
