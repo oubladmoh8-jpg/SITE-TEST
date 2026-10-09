@@ -12,9 +12,13 @@ C8B now has a PHP front controller intended for PHP shared hosting such as Infin
 - Upload the repository files to the hosting web root. If the users table does not exist, PHP attempts to create the tables using database/schema.mysql.sql on the first successful database connection.
 - The real php/database.config.php is excluded from Git. Never publish database credentials.
 
-## First-time setup
+## Default Owner login
 
-After configuring the database connection and uploading the files, open the site in a browser. If no Owner account exists yet, C8B displays a one-time setup screen. Create the first Owner account there; once it exists, that setup screen is permanently disabled and normal registration creates regular users only.
+On a fresh database, C8B automatically creates the Owner account:
+- Username: `admin`
+- Password: the password provided by the site owner for this deployment.
+
+The account is created automatically when the database has no Owner account, so there is no separate Owner-creation page to complete. Sign in at `/login`; the Owner dashboard is at `/owner`. Normal user registration remains available at `/register` and creates regular user accounts only. Change the default password after first login if you add password-change support or update the stored hash securely.
 
 ## Important
 - Original Node.js files remain as a reference and are not invoked by the PHP entry point.
