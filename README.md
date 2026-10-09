@@ -10,10 +10,11 @@ C8B uses PHP and a single SQLite database file instead of requiring a MySQL serv
 
 ## Getting started
 
-1. Upload the repository to PHP hosting or run it on a local PHP server.
-2. Enable the PHP `pdo_sqlite` extension for the active PHP version.
-3. Visit the site. The database file and all eight tables are created automatically; no MySQL control panel or database credentials are required.
-4. Sign in at `/login` using the Owner account credentials already provided for this deployment.
+1. Upload the repository to PHP hosting or run it locally with the PHP development server.
+2. For local development, start the app from the repository root with `php -S 0.0.0.0:8000 router.php` and open port 8000 in your development environment. The included router serves `/css`, `/js`, and `/assets` correctly on PHP's built-in server (which does not read `.htaccess`).
+3. Enable the PHP `pdo_sqlite` extension for the active PHP version.
+4. Visit the site. The database file and all eight tables are created automatically; no MySQL control panel or database credentials are required.
+5. Sign in at `/login` using the Owner account credentials already provided for this deployment.
 
 By default the database file is `database/c8b.sqlite`. To store it outside the public web directory, set the `C8B_DB_PATH` environment variable to an absolute writable path, or set `path` in the private `php/database.config.php` file. Do not commit that private file.
 
