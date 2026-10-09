@@ -23,8 +23,10 @@
       credentials: 'same-origin',
       headers: { Accept: 'application/json' },
     }).then(async (response) => {
-      if (!response.ok) throw new Error('Could not start a secure session. Refresh the page.');
-      const payload = await response.json();
+      const payload = await response.json().catch(() => ({}));
+      if (!response.ok || !payload.csrfToken) {
+        throw new Error(payload.error || 'Could not start a secure session. Refresh the page.');
+      }
       document.querySelectorAll('input[name="csrfToken"]').forEach((input) => {
         input.value = payload.csrfToken;
       });
