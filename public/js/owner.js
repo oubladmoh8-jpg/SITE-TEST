@@ -290,7 +290,11 @@
     try {
       await api(`/api/owner/projects/${projectId}/files`, { method: 'POST', body });
       closeDialog('upload-dialog');
-      showNotice(`Uploaded ${files.length} file${files.length === 1 ? '' : 's'} to local server storage.`);
+      const selectedProject = state.projects.find((project) => String(project.id) === String(projectId));
+      const countLabel = `Uploaded ${files.length} file${files.length === 1 ? '' : 's'} to server storage.`;
+      showNotice(selectedProject && selectedProject.status !== 'published'
+        ? `${countLabel} They are saved, but will not appear in the public Downloads section until you edit this project and set its status to Published.`
+        : `${countLabel} The files should now appear in this project's Downloads section.`);
       await Promise.all([loadFiles(), loadDashboard(), loadProjects()]);
     } catch (error) { showNotice(error.message, true); }
     finally { button.disabled = false; }
