@@ -26,6 +26,20 @@ function c8b_schema_if_needed(PDO $pdo): void {
   $sql=preg_replace('/^\s*--.*$/m','',$sql)??$sql;
   foreach(preg_split('/;\s*(?:\r?\n|$)/',$sql)?:[] as $statement){$statement=trim($statement);if($statement!=='')$pdo->exec($statement);}
  }
+ // Bootstrap the requested Owner account on a fresh install, or when no Owner exists.
+ if ((int)$pdo->query("SELECT COUNT(*) FROM users WHERE role='owner'")->fetchColumn() === 0) {
+  $hash = '$2y$12$xHs2tVfhEDmQ16rlnSwZve8SVi5mu2mP2HFWLFJF/OChpu5tYCyRm';
+  $existing = $pdo->prepare('SELECT id FROM users WHERE username = ? LIMIT 1');
+  $existing->execute(['admin']);
+  $adminId = $existing->fetchColumn();
+  if ($adminId) {
+   $update = $pdo->prepare("UPDATE users SET email=?, password_hash=?, role='owner', is_active=1 WHERE id=?");
+   $update->execute(['admin@c8b.local', $hash, $adminId]);
+  } else {
+   $insert = $pdo->prepare("INSERT INTO users(username,email,password_hash,role,is_active) VALUES(?,?,?,?,1)");
+   $insert->execute(['admin', 'admin@c8b.local', $hash, 'owner']);
+  }
+ }
 }
 function db(): PDO {global $pdo;return $pdo;}
 function h($v): string{return htmlspecialchars((string)($v??''),ENT_QUOTES|ENT_SUBSTITUTE,'UTF-8');}
