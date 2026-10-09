@@ -7,6 +7,12 @@ declare(strict_types=1);
  */
 $path = rawurldecode(parse_url($_SERVER['REQUEST_URI'] ?? '/', PHP_URL_PATH) ?: '/');
 
+// Never expose repository metadata or hidden configuration files.
+if (preg_match('~(?:^|/)\\.[^/]*~', $path)) {
+    http_response_code(404);
+    exit('Not found');
+}
+
 $blocked = ['php', 'database', 'uploads', 'routes', 'views', 'scripts', 'middleware', 'node_modules'];
 foreach ($blocked as $directory) {
     if (preg_match('~^/' . preg_quote($directory, '~') . '(?:/|$)~i', $path)) {
