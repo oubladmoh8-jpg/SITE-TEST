@@ -22,14 +22,14 @@ try {
     header('Cache-Control: no-store');
     $requestPath = parse_url($_SERVER['REQUEST_URI'] ?? '/', PHP_URL_PATH) ?: '/';
     $isApiRequest = str_starts_with($requestPath, '/api/');
-    $message = 'The database is not ready. Please check the site database configuration.';
+    $message = 'The local file database is not ready. Please check SQLite support and folder permissions.';
     $detail = strtolower($e->getMessage());
     if (str_contains($detail, 'could not find driver')) {
-        $message = 'PHP is missing the PDO MySQL driver (pdo_mysql). Enable it for the PHP version serving this website.';
-    } elseif (str_contains($detail, 'mysql is not configured')) {
-        $message = 'MySQL is not configured. Create php/database.config.php from the example and enter the database details from your hosting control panel.';
+        $message = 'PHP is missing the PDO SQLite driver (pdo_sqlite). Enable it for the PHP version serving this website.';
+    } elseif (str_contains($detail, 'could not create the database folder') || str_contains($detail, 'not writable')) {
+        $message = 'PHP cannot write to the database folder. Enable pdo_sqlite and give PHP write permission to the database folder, or set C8B_DB_PATH to a writable private path.';
     } elseif ($e instanceof PDOException) {
-        $message = 'Could not connect to MySQL. Verify the database name, host, username, password, and database permissions.';
+        $message = 'Could not open the SQLite database file. Enable pdo_sqlite and verify that its folder is writable by PHP.';
     }
     if ($isApiRequest) {
         header('Content-Type: application/json; charset=utf-8');
