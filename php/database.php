@@ -24,7 +24,10 @@ function c8b_database(): PDO
     }
 
     $path = getenv('C8B_DB_PATH');
-    if ($path === false || trim($path) === '') $path = (string)($config['path'] ?? dirname(__DIR__) . '/database/c8b.sqlite');
+    if ($path === false || trim($path) === '') {
+        $configuredPath = trim((string)($config['path'] ?? ''));
+        $path = $configuredPath !== '' ? $configuredPath : dirname(__DIR__) . '/database/c8b.sqlite';
+    }
     $path = trim($path);
     if ($path === '') throw new RuntimeException('SQLite database path is empty.');
 
