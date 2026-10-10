@@ -291,7 +291,7 @@
     const projectId = $('#upload-project').value;
     const body = new FormData();
     body.append('version', $('#upload-version').value || '1.0.0');
-    for (const file of files) body.append('files[]', file);
+    for (const file of files) body.append('files', file);
     const button = form.querySelector('button[type="submit"]');
     button.disabled = true;
     try {
@@ -360,7 +360,7 @@
     const input = document.getElementById(`media-${type}`);
     if (!input.files || !input.files[0]) return showNotice('Choose an image first.', true);
     const body = new FormData();
-    body.append('file', input.files[0]);
+    body.append('image', input.files[0]);
     try {
       await api(`/api/owner/projects/${projectId}/media?type=${encodeURIComponent(type)}`, { method: 'POST', body });
       showNotice(`${type === 'screenshot' ? 'Screenshot' : type === 'icon' ? 'Icon' : 'Banner'} uploaded.`);
