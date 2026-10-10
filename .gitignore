@@ -3,7 +3,6 @@ node_modules/
 .env
 .env.*
 !.env.example
-php/database.config.php
 
 # Logs and operating-system/editor files
 *.log
