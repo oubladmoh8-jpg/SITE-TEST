@@ -15,7 +15,7 @@ C8B is an Express application with a responsive public catalogue, authentication
 3. Set a long, random `SESSION_SECRET`.
 4. Create a bcrypt password hash by running `node scripts/hash-password.js` in a terminal, then put the printed hash in `OWNER_PASSWORD_HASH` in `.env`. The password must be at least 12 characters and include lowercase, uppercase, and a number.
 5. Start the app: `npm start`
-6. Open `http://localhost:3000`.
+6. Open `http://78.154.103.47:11487`.
 
 The SQLite database is created automatically at `database/database.sqlite` by default. Set `DATABASE_PATH` to an absolute path if your host provides a separate persistent data directory. Uploaded project files and images are stored in `uploads/`; make sure this directory persists between restarts.
 

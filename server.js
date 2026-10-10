@@ -24,7 +24,7 @@ const { router: publicRouter, errorPage: publicErrorPage } = require('./routes/p
 const app = express();
 app.set('trust proxy', 1);
 const isProduction = process.env.NODE_ENV === 'production';
-const port = Number.parseInt(process.env.PORT || '3000', 10);
+const port = Number.parseInt(process.env.PORT || '11487', 10);
 const viewsDir = path.resolve(__dirname, 'views');
 const publicDir = path.resolve(__dirname, 'public');
 const SQLiteStore = SQLiteStoreFactory(session);
@@ -85,7 +85,7 @@ if (oauthEnabled.google) {
   passport.use(new GoogleStrategy({
     clientID: process.env.GOOGLE_CLIENT_ID,
     clientSecret: process.env.GOOGLE_CLIENT_SECRET,
-    callbackURL: process.env.GOOGLE_CALLBACK_URL || 'http://localhost:3000/auth/google/callback',
+    callbackURL: process.env.GOOGLE_CALLBACK_URL || 'http://78.154.103.47:11487/auth/google/callback',
     state: true,
   }, oauthVerify('google')));
 } else {
@@ -96,7 +96,7 @@ if (oauthEnabled.discord) {
   passport.use(new DiscordStrategy({
     clientID: process.env.DISCORD_CLIENT_ID,
     clientSecret: process.env.DISCORD_CLIENT_SECRET,
-    callbackURL: process.env.DISCORD_CALLBACK_URL || 'http://localhost:3000/auth/discord/callback',
+    callbackURL: process.env.DISCORD_CALLBACK_URL || 'http://78.154.103.47:11487/auth/discord/callback',
     scope: ['identify', 'email'],
     state: true,
   }, oauthVerify('discord')));
