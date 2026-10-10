@@ -19,3 +19,17 @@ jobs:
         run: npm install
       - name: Check JavaScript syntax
         run: npm run check
+      - name: Smoke test server and static CSS
+        run: |
+          NODE_ENV=production SESSION_SECRET=ci-test-session-secret-at-least-32-characters DATABASE_PATH=./database/ci.sqlite PORT=3000 npm start > /tmp/c8b-server.log 2>&1 &
+          SERVER_PID=$!
+          trap 'kill "$SERVER_PID" 2>/dev/null || true' EXIT
+          for attempt in $(seq 1 30); do
+            if curl --fail --silent http://127.0.0.1:3000/health | grep -q '"status":"ok"'; then
+              curl --fail --silent http://127.0.0.1:3000/css/public.css | grep -q 'color-scheme'
+              exit 0
+            fi
+            sleep 1
+          done
+          cat /tmp/c8b-server.log
+          exit 1
