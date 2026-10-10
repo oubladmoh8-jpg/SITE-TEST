@@ -1,11 +1,12 @@
 {
   "name": "c8b-platform",
   "version": "1.0.0",
-  "description": "C8B project publishing platform",
+  "description": "C8B Node.js project publishing platform",
   "main": "server.js",
   "scripts": {
     "start": "node server.js",
-    "dev": "node --watch server.js"
+    "dev": "node --watch server.js",
+    "check": "node --check server.js && node --check database.js && node --check middleware/auth.js && node --check routes/auth.js && node --check routes/owner.js && node --check routes/public.js && node --check routes/downloads.js && node --check public/js/auth.js && node --check public/js/owner.js && node --check public/js/public.js && node --check scripts/hash-password.js"
   },
   "engines": {
     "node": ">=20"
